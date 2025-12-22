@@ -38,7 +38,7 @@ export default async function Home() {
           <p>✓ Fast redirects with edge computing</p>
           <p>✓ Click analytics and tracking</p>
           <p>✓ Custom slug support</p>
-          <p>✓ Docker-ready for easy self-hosting</p>
+          <p>✓ Ready for easy self-hosting</p>
         </div>
 
         {/* Docker Deployment Info */}
@@ -49,16 +49,14 @@ export default async function Home() {
           <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
             <p>Self-host SMRL in minutes:</p>
             <pre className="overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
-              <code>{`git clone <repo-url>
+              <code>{`git clone https://github.com/hetref/smrl
 cd smrl
 cp .env.example .env
-docker compose up -d`}</code>
+npm install
+npm run dev`}</code>
             </pre>
             <p className="text-xs">
-              Full documentation available in{" "}
-              <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                DOCKER.md
-              </span>
+              Full documentation available on the Repo.
             </p>
           </div>
         </div>
