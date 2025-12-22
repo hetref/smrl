@@ -63,6 +63,9 @@ export default async function UrlsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                       Created
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -93,6 +96,14 @@ export default async function UrlsPage() {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
                         {new Date(url.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <Link
+                          href={`/dashboard/urls/${url.id}/edit`}
+                          className="text-sm font-medium text-black hover:text-zinc-600 dark:text-white dark:hover:text-zinc-400"
+                        >
+                          Edit
+                        </Link>
                       </td>
                     </tr>
                   ))}
