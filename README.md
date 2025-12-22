@@ -76,7 +76,7 @@ smrl/
 │   │   ├── new/page.js            # Create new URL
 │   │   └── urls/page.js           # List all URLs
 │   ├── r/
-│   │   └── [...slug]/route.js     # Redirect handler
+│   │   └── [...slug]/route.js     # Redirect handler (uses Response.redirect)
 │   ├── sign-in/                   # Clerk sign-in
 │   ├── sign-up/                   # Clerk sign-up
 │   ├── layout.js                  # Root layout
