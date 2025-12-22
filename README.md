@@ -174,6 +174,55 @@ Redirect to target URL (public endpoint)
 
 ## Deployment
 
+### Docker (Self-Hosted)
+
+The easiest way to self-host SMRL is using Docker:
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd smrl
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
+   ```
+
+3. **Run database migrations**
+   ```bash
+   docker compose run smrl npx prisma migrate deploy
+   ```
+
+4. **Start the application**
+   ```bash
+   docker compose up --build
+   ```
+
+5. **Access the app**
+   - Open [http://localhost:3000](http://localhost:3000)
+
+**Docker Commands:**
+```bash
+# Start in detached mode
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop the application
+docker compose down
+
+# Rebuild after code changes
+docker compose up --build
+```
+
+**Important Notes:**
+- The Docker setup connects to your external NeonDB instance
+- Migrations must be run manually (not automated)
+- The production build is optimized and uses Node.js 20 LTS
+
 ### Vercel (Recommended)
 
 1. Push your code to GitHub

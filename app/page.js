@@ -38,6 +38,44 @@ export default async function Home() {
           <p>✓ Fast redirects with edge computing</p>
           <p>✓ Click analytics and tracking</p>
           <p>✓ Custom slug support</p>
+          <p>✓ Docker-ready for easy self-hosting</p>
+        </div>
+
+        {/* Docker Deployment Info */}
+        <div className="mt-8 w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 text-left dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="mb-3 text-lg font-semibold text-black dark:text-white">
+            🐳 Deploy with Docker
+          </h2>
+          <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <p>Self-host SMRL in minutes:</p>
+            <pre className="overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
+              <code>{`git clone <repo-url>
+cd smrl
+cp .env.example .env
+docker compose up -d`}</code>
+            </pre>
+            <p className="text-xs">
+              Full documentation available in{" "}
+              <span className="font-mono text-zinc-800 dark:text-zinc-200">
+                DOCKER.md
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {/* Developer Credit */}
+        <div className="mt-4 text-xs text-zinc-400 dark:text-zinc-600">
+          <p>
+            Developed by{" "}
+            <a
+              href="https://aryanshinde.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+            >
+              Aryan Shinde
+            </a>
+          </p>
         </div>
       </main>
     </div>
