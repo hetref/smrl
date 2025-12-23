@@ -168,12 +168,12 @@ export default function EditUrlPage() {
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
                 placeholder="my-link"
-                pattern="[a-zA-Z0-9_-]{4,10}"
+                pattern="[a-zA-Z0-9_-]{4,200}"
                 required
                 className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500 dark:focus:border-white dark:focus:ring-white"
               />
               <p className="mt-1 text-xs text-zinc-500">
-                4-10 characters, letters, numbers, dashes, and underscores only
+                4-200 characters, letters, numbers, dashes, and underscores only
               </p>
             </div>
 

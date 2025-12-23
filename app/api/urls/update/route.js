@@ -32,10 +32,10 @@ export async function PATCH(request) {
     }
 
     // Validate new slug format
-    const slugRegex = /^[a-zA-Z0-9_-]{4,10}$/;
+    const slugRegex = /^[a-zA-Z0-9_-]{4,200}$/;
     if (!slugRegex.test(newSlug)) {
       return NextResponse.json(
-        { error: "Slug must be 4-10 characters and contain only letters, numbers, dashes, and underscores" },
+        { error: "Slug must be 4-200 characters and contain only letters, numbers, dashes, and underscores" },
         { status: 400 }
       );
     }

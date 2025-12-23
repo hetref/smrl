@@ -37,10 +37,10 @@ export async function POST(request) {
     
     if (customSlug) {
       // Validate custom slug
-      const slugRegex = /^[a-zA-Z0-9_-]{4,10}$/;
+      const slugRegex = /^[a-zA-Z0-9_-]{4,200}$/;
       if (!slugRegex.test(customSlug)) {
         return NextResponse.json(
-          { error: "Custom slug must be 4-10 characters and contain only letters, numbers, dashes, and underscores" },
+          { error: "Custom slug must be 4-200 characters and contain only letters, numbers, dashes, and underscores" },
           { status: 400 }
         );
       }
