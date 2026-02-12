@@ -11,6 +11,7 @@ export default function EditUrlPage() {
 
   const [url, setUrl] = useState(null);
   const [newSlug, setNewSlug] = useState("");
+  const [newTargetUrl, setNewTargetUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -27,6 +28,7 @@ export default function EditUrlPage() {
         const data = await response.json();
         setUrl(data);
         setNewSlug(data.slug);
+        setNewTargetUrl(data.targetUrl);
       } catch (err) {
         setError("Failed to load URL details");
       } finally {
@@ -53,7 +55,8 @@ export default function EditUrlPage() {
         },
         body: JSON.stringify({
           id: urlId,
-          newSlug
+          newSlug,
+          newTargetUrl
         })
       });
 
@@ -130,14 +133,6 @@ export default function EditUrlPage() {
           <div className="mb-6 space-y-2">
             <div>
               <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                Target URL:
-              </span>
-              <p className="mt-1 break-all text-sm text-black dark:text-white">
-                {url.targetUrl}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                 Current Slug:
               </span>
               <p className="mt-1 text-sm font-mono text-black dark:text-white">
@@ -157,10 +152,31 @@ export default function EditUrlPage() {
           <form onSubmit={handleSubmit} className="space-y-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
             <div>
               <label
+                htmlFor="newTargetUrl"
+                className="block text-sm font-medium text-black dark:text-white"
+              >
+                Target URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                id="newTargetUrl"
+                value={newTargetUrl}
+                onChange={(e) => setNewTargetUrl(e.target.value)}
+                placeholder="https://example.com"
+                required
+                className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500 dark:focus:border-white dark:focus:ring-white"
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                The destination URL where users will be redirected
+              </p>
+            </div>
+
+            <div>
+              <label
                 htmlFor="newSlug"
                 className="block text-sm font-medium text-black dark:text-white"
               >
-                New Slug <span className="text-red-500">*</span>
+                Slug <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -185,7 +201,7 @@ export default function EditUrlPage() {
 
             {success && (
               <div className="rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                Slug updated successfully! Redirecting...
+                URL updated successfully! Redirecting...
               </div>
             )}
 
@@ -195,7 +211,7 @@ export default function EditUrlPage() {
                 disabled={saving || success}
                 className="flex-1 rounded-lg bg-black px-4 py-3 font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               >
-                {saving ? "Saving..." : "Update Slug"}
+                {saving ? "Saving..." : "Update URL"}
               </button>
               <Link
                 href="/dashboard/urls"

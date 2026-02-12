@@ -1,5 +1,6 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import CopyButton from "./CopyButton";
 
 export default async function UrlsPage() {
   // Fetch all URLs ordered by creation date
@@ -81,9 +82,11 @@ export default async function UrlsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-zinc-500 hover:text-black dark:hover:text-white"
+                            title="Open short URL"
                           >
                             ↗
                           </a>
+                          <CopyButton slug={url.slug} />
                         </div>
                       </td>
                       <td className="px-6 py-4">

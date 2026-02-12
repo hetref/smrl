@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 export default async function DashboardPage() {
   // Fetch statistics
   const totalUrls = await prisma.shortUrl.count();
-  
+
   const clicksAggregate = await prisma.shortUrl.aggregate({
     _sum: {
       clicks: true

@@ -14,7 +14,7 @@ export async function PATCH(request) {
     }
 
     const body = await request.json();
-    const { id, newSlug } = body;
+    const { id, newSlug, newTargetUrl } = body;
 
     // Validate inputs
     if (!id) {
@@ -24,20 +24,34 @@ export async function PATCH(request) {
       );
     }
 
-    if (!newSlug) {
+    if (!newSlug && !newTargetUrl) {
       return NextResponse.json(
-        { error: "New slug is required" },
+        { error: "At least one field (slug or target URL) must be provided" },
         { status: 400 }
       );
     }
 
-    // Validate new slug format
-    const slugRegex = /^[a-zA-Z0-9_-]{4,200}$/;
-    if (!slugRegex.test(newSlug)) {
-      return NextResponse.json(
-        { error: "Slug must be 4-200 characters and contain only letters, numbers, dashes, and underscores" },
-        { status: 400 }
-      );
+    // Validate new slug format if provided
+    if (newSlug) {
+      const slugRegex = /^[a-zA-Z0-9_-]{4,200}$/;
+      if (!slugRegex.test(newSlug)) {
+        return NextResponse.json(
+          { error: "Slug must be 4-200 characters and contain only letters, numbers, dashes, and underscores" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate new target URL if provided
+    if (newTargetUrl) {
+      try {
+        new URL(newTargetUrl);
+      } catch (e) {
+        return NextResponse.json(
+          { error: "Invalid target URL format" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if the URL exists
@@ -53,27 +67,34 @@ export async function PATCH(request) {
     }
 
     // Check if new slug is already in use (by a different URL)
-    const slugInUse = await prisma.shortUrl.findUnique({
-      where: { slug: newSlug }
-    });
+    if (newSlug) {
+      const slugInUse = await prisma.shortUrl.findUnique({
+        where: { slug: newSlug }
+      });
 
-    if (slugInUse && slugInUse.id !== id) {
-      return NextResponse.json(
-        { error: `Slug '${newSlug}' is already in use` },
-        { status: 409 }
-      );
+      if (slugInUse && slugInUse.id !== id) {
+        return NextResponse.json(
+          { error: `Slug '${newSlug}' is already in use` },
+          { status: 409 }
+        );
+      }
     }
 
-    // Update the slug
+    // Prepare update data
+    const updateData = {};
+    if (newSlug) updateData.slug = newSlug;
+    if (newTargetUrl) updateData.targetUrl = newTargetUrl;
+
+    // Update the URL
     const updatedUrl = await prisma.shortUrl.update({
       where: { id },
-      data: { slug: newSlug }
+      data: updateData
     });
 
     // Build full short URL
     const protocol = request.headers.get("x-forwarded-proto") || "http";
     const host = request.headers.get("host");
-    const fullShortUrl = `${protocol}://${host}/r/${newSlug}`;
+    const fullShortUrl = `${protocol}://${host}/r/${updatedUrl.slug}`;
 
     return NextResponse.json(
       {
