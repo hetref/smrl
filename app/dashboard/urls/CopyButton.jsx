@@ -8,7 +8,7 @@ export default function CopyButton({ slug }) {
   const handleCopy = async (e) => {
     e.preventDefault();
     const shortUrl = `${window.location.origin}/r/${slug}`;
-    
+
     try {
       await navigator.clipboard.writeText(shortUrl);
       setCopied(true);

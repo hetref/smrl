@@ -69,7 +69,7 @@ export default function EditUrlPage() {
 
       setSuccess(true);
       setUrl(data);
-      
+
       // Redirect after 1.5 seconds
       setTimeout(() => {
         router.push("/dashboard/urls");
