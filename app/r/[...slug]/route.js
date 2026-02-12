@@ -8,21 +8,21 @@ export async function GET(request, { params }) {
     // Next.js 16: params is a Promise and must be awaited
     const { slug: slugArray } = await params;
     const slug = slugArray?.[0];
-    
+
     if (!slug) {
       return new Response("Not Found", { status: 404 });
     }
-    
+
     // Query with connection pooling optimization
     const record = await prisma.shortUrl.findUnique({
       where: { slug },
       select: { targetUrl: true, id: true },
     });
-    
+
     if (!record) {
       return new Response("Not Found", { status: 404 });
     }
-    
+
     // Fire-and-forget analytics (DO NOT await)
     const url = new URL(request.url);
     fetch(`${url.origin}/api/urls/stats`, {
@@ -33,8 +33,8 @@ export async function GET(request, { params }) {
         referrer: request.headers.get("referer"),
         userAgent: request.headers.get("user-agent"),
       }),
-    }).catch(() => {});
-    
+    }).catch(() => { });
+
     // Use Response.redirect with 302 temporary redirect
     return Response.redirect(record.targetUrl, 302);
   } catch (error) {

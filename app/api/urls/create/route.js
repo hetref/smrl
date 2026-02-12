@@ -35,7 +35,7 @@ export async function POST(request) {
 
     // Validate or generate slug
     let slug = customSlug;
-    
+
     if (customSlug) {
       // Validate custom slug
       const slugRegex = /^[a-zA-Z0-9_-]{4,200}$/;
@@ -61,13 +61,13 @@ export async function POST(request) {
       // Generate unique slug
       let attempts = 0;
       const maxAttempts = 10;
-      
+
       while (attempts < maxAttempts) {
         slug = generateSlug(6);
         const existing = await prisma.shortUrl.findUnique({
           where: { slug }
         });
-        
+
         if (!existing) {
           break;
         }
