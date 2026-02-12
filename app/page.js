@@ -41,23 +41,53 @@ export default async function Home() {
           <p>✓ Ready for easy self-hosting</p>
         </div>
 
-        {/* Docker Deployment Info */}
-        <div className="mt-8 w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 text-left dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-3 text-lg font-semibold text-black dark:text-white">
-            🐳 Deploy with Docker
-          </h2>
-          <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <p>Self-host SMRL in minutes:</p>
-            <pre className="overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
-              <code>{`git clone https://github.com/hetref/smrl
+        {/* Deployment Options */}
+        <div className="mt-8 w-full max-w-lg space-y-4">
+          {/* Deploy to Vercel */}
+          <div className="rounded-lg border border-zinc-200 bg-white p-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="mb-4 text-lg font-semibold text-black dark:text-white">
+              ⚡ Quick Deploy
+            </h2>
+            <a
+              href="https://vercel.com/new/import?repository-name=smrl&s=https://github.com/hetref/smrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-black px-8 font-medium text-white transition-all hover:bg-zinc-800 hover:scale-105 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 76 76"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="currentColor" />
+              </svg>
+              Deploy to Vercel
+            </a>
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
+              Deploy in one click with automatic HTTPS and global CDN
+            </p>
+          </div>
+
+          {/* Docker Deployment */}
+          <div className="rounded-lg border border-zinc-200 bg-white p-6 text-left dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="mb-3 text-lg font-semibold text-black dark:text-white">
+              🐳 Self-Host with Docker
+            </h2>
+            <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <p>Deploy SMRL on your own infrastructure:</p>
+              <pre className="overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
+                <code>{`git clone https://github.com/hetref/smrl.git
 cd smrl
 cp .env.example .env
 npm install
 npm run dev`}</code>
-            </pre>
-            <p className="text-xs">
-              Full documentation available on the Repo.
-            </p>
+              </pre>
+              <p className="text-xs">
+                Full documentation available on the Repo.
+              </p>
+            </div>
           </div>
         </div>
 
