@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
@@ -95,6 +96,11 @@ export async function PATCH(request) {
     const protocol = request.headers.get("x-forwarded-proto") || "http";
     const host = request.headers.get("host");
     const fullShortUrl = `${protocol}://${host}/r/${updatedUrl.slug}`;
+
+    // Revalidate dashboard pages to show updated URL
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/urls");
+    revalidatePath(`/dashboard/urls/${id}/edit`);
 
     return NextResponse.json(
       {

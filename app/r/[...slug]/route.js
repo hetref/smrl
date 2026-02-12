@@ -1,5 +1,8 @@
 import prisma from "@/lib/prisma";
 
+// Keep dynamic for real-time redirects
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     // Next.js 16: params is a Promise and must be awaited
@@ -10,9 +13,10 @@ export async function GET(request, { params }) {
       return new Response("Not Found", { status: 404 });
     }
     
+    // Query with connection pooling optimization
     const record = await prisma.shortUrl.findUnique({
       where: { slug },
-      select: { targetUrl: true },
+      select: { targetUrl: true, id: true },
     });
     
     if (!record) {
@@ -31,7 +35,7 @@ export async function GET(request, { params }) {
       }),
     }).catch(() => {});
     
-    // Use Response.redirect (not NextResponse.redirect)
+    // Use Response.redirect with 302 temporary redirect
     return Response.redirect(record.targetUrl, 302);
   } catch (error) {
     console.error("Redirect error:", error);

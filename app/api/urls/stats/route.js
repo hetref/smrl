@@ -39,6 +39,9 @@ export async function POST(request) {
       })
     ]);
 
+    // Don't revalidate on every click - ISR will handle updates periodically
+    // This reduces unnecessary cache invalidation and database load
+
     return NextResponse.json({ success: true });
   } catch (error) {
     // Silent failure - don't expose errors

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 
+// ISR: Regenerate page every 60 seconds if there's a request
+// Also revalidated on-demand after mutations
+export const revalidate = 60;
+
 export default async function DashboardPage() {
   // Fetch statistics
   const totalUrls = await prisma.shortUrl.count();

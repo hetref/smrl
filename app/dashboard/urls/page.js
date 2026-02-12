@@ -2,6 +2,10 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import CopyButton from "./CopyButton";
 
+// ISR: Regenerate page every 60 seconds if there's a request
+// Also revalidated on-demand after mutations
+export const revalidate = 60;
+
 export default async function UrlsPage() {
   // Fetch all URLs ordered by creation date
   const urls = await prisma.shortUrl.findMany({

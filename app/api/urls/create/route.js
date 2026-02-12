@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { generateSlug } from "@/lib/slug";
@@ -93,6 +94,10 @@ export async function POST(request) {
     const protocol = request.headers.get("x-forwarded-proto") || "http";
     const host = request.headers.get("host");
     const fullShortUrl = `${protocol}://${host}/r/${slug}`;
+
+    // Revalidate dashboard pages to show new URL
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/urls");
 
     return NextResponse.json(
       {
