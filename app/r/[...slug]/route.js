@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import prisma from "@/lib/prisma";
+import { verifyLinkAccessToken } from "@/lib/security";
 
 // Keep dynamic for real-time redirects
 export const dynamic = 'force-dynamic';
@@ -14,20 +15,73 @@ export async function GET(request, { params }) {
       return new Response("Not Found", { status: 404 });
     }
 
-    // Query with connection pooling optimization
+    const requestUrl = new URL(request.url);
+
+    // Query record with security attributes
     const record = await prisma.shortUrl.findUnique({
       where: { slug },
-      select: { targetUrl: true, id: true },
+      select: {
+        id: true,
+        slug: true,
+        targetUrl: true,
+        clicks: true,
+        maxClicks: true,
+        expiresAt: true,
+        passwordHash: true,
+        isActive: true,
+      },
     });
 
     if (!record) {
       return new Response("Not Found", { status: 404 });
     }
 
+    // Security Gate 1: Link Paused Check
+    if (!record.isActive) {
+      return Response.redirect(new URL(`/gate/${slug}?status=paused`, request.url), 307);
+    }
+
+    // Security Gate 2: Expiration Date Check
+    if (record.expiresAt && new Date() > new Date(record.expiresAt)) {
+      return Response.redirect(new URL(`/gate/${slug}?status=expired`, request.url), 307);
+    }
+
+    // Security Gate 3: Max Clicks Limit Check
+    if (record.maxClicks !== null && record.clicks >= record.maxClicks) {
+      return Response.redirect(new URL(`/gate/${slug}?status=limit_reached`, request.url), 307);
+    }
+
+    // Security Gate 4: Password Protection Check
+    if (record.passwordHash) {
+      // Check HTTP-only auth cookie
+      const cookieHeader = request.headers.get("cookie") || "";
+      const match = cookieHeader.match(new RegExp(`(?:^|; )smrl_token_${record.id}=([^;]*)`));
+      const token = match ? decodeURIComponent(match[1]) : null;
+
+      const hasValidAccess = verifyLinkAccessToken(token, record.id, record.slug);
+
+      if (!hasValidAccess) {
+        // Redirect to password gate. NEVER expose targetUrl!
+        return Response.redirect(new URL(`/gate/${slug}?status=password`, request.url), 307);
+      }
+    }
+
+    // Safely forward incoming query parameters (UTM tags, tracking, query strings)
+    let destinationUrl = record.targetUrl;
+    try {
+      const parsedDestination = new URL(record.targetUrl);
+      requestUrl.searchParams.forEach((val, key) => {
+        parsedDestination.searchParams.set(key, val);
+      });
+      destinationUrl = parsedDestination.toString();
+    } catch (e) {
+      console.error("Error merging query parameters:", e);
+    }
+
     const referrer = request.headers.get("referer");
     const userAgent = request.headers.get("user-agent");
 
-    // Native Next.js background task: ensures analytics finish without delaying redirect
+    // Native Next.js background task: increments click count and logs analytics
     after(async () => {
       try {
         await prisma.$transaction([
@@ -53,7 +107,7 @@ export async function GET(request, { params }) {
     });
 
     // Use Response.redirect with 302 temporary redirect
-    return Response.redirect(record.targetUrl, 302);
+    return Response.redirect(destinationUrl, 302);
   } catch (error) {
     console.error("Redirect error:", error);
     return new Response("Internal Server Error", { status: 500 });

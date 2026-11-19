@@ -32,6 +32,10 @@ export default async function UrlsPage() {
     slug: u.slug,
     targetUrl: u.targetUrl,
     clicks: u.clicks,
+    isPasswordProtected: !!u.passwordHash,
+    isActive: typeof u.isActive === "boolean" ? u.isActive : true,
+    expiresAt: u.expiresAt ? u.expiresAt.toISOString() : null,
+    maxClicks: u.maxClicks,
     createdAt: u.createdAt.toISOString(),
   }));
 

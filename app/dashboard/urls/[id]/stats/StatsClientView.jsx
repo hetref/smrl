@@ -254,6 +254,66 @@ export default function StatsClientView({ url, logs }) {
         </div>
       </div>
 
+      {/* Security & Access Gates Status Card */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
+            Link Status
+          </span>
+          <span
+            className={`mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold ${
+              url.isActive
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-amber-700 dark:text-amber-400"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                url.isActive ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            {url.isActive ? "Active (Accepting Visits)" : "Paused (Blocked)"}
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
+            Password Gate
+          </span>
+          <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-black dark:text-white">
+            {url.isPasswordProtected ? "🔒 Password Protected" : "🔓 Open Redirect"}
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
+            Expiration Policy
+          </span>
+          <span className="mt-1.5 text-xs font-medium text-black dark:text-white block truncate">
+            {url.expiresAt
+              ? new Date(url.expiresAt).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Never Expires"}
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
+            Click Limit Cap
+          </span>
+          <span className="mt-1.5 text-xs font-semibold text-black dark:text-white block">
+            {url.maxClicks
+              ? `${url.clicks} / ${url.maxClicks} clicks`
+              : "Unlimited Clicks"}
+          </span>
+        </div>
+      </div>
+
       {/* Clicks Timeline Chart */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">

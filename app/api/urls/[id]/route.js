@@ -50,6 +50,10 @@ export async function GET(request, { params }) {
         slug: url.slug,
         targetUrl: url.targetUrl,
         clicks: url.clicks,
+        isPasswordProtected: !!url.passwordHash,
+        expiresAt: url.expiresAt ? url.expiresAt.toISOString() : null,
+        maxClicks: url.maxClicks,
+        isActive: url.isActive,
         createdAt: url.createdAt.toISOString()
       },
       { status: 200 }

@@ -43,6 +43,10 @@ export default async function UrlStatsPage({ params }) {
     slug: url.slug,
     targetUrl: url.targetUrl,
     clicks: url.clicks,
+    isPasswordProtected: !!url.passwordHash,
+    isActive: typeof url.isActive === "boolean" ? url.isActive : true,
+    expiresAt: url.expiresAt ? url.expiresAt.toISOString() : null,
+    maxClicks: url.maxClicks,
     createdAt: url.createdAt.toISOString(),
   };
 

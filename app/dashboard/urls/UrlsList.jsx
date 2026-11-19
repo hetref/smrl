@@ -11,6 +11,24 @@ export default function UrlsList({ initialUrls }) {
   const [sortBy, setSortBy] = useState("newest"); // "newest", "clicks", "oldest"
   const [activeQr, setActiveQr] = useState(null); // { slug, targetUrl }
 
+  const handleToggleActive = async (url) => {
+    try {
+      const res = await fetch("/api/urls/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: url.id,
+          isActive: !url.isActive,
+        }),
+      });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const filteredUrls = useMemo(() => {
     let result = [...initialUrls];
 
@@ -198,33 +216,59 @@ export default function UrlsList({ initialUrls }) {
                   >
                     {/* Slug & Quick Link */}
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-black dark:text-white">
-                          /{url.slug}
-                        </span>
-                        <a
-                          href={`/r/${url.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white"
-                          title="Open short link in new tab"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold text-black dark:text-white">
+                            /{url.slug}
+                          </span>
+                          <a
+                            href={`/r/${url.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white"
+                            title="Open short link in new tab"
                           >
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            <polyline points="15 3 21 3 21 9" />
-                            <line x1="10" y1="14" x2="21" y2="3" />
-                          </svg>
-                        </a>
-                        <CopyButton slug={url.slug} />
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          </a>
+                          <CopyButton slug={url.slug} />
+                        </div>
+
+                        {/* Status Badges */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {!url.isActive && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                              Paused
+                            </span>
+                          )}
+                          {url.isPasswordProtected && (
+                            <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-800 dark:bg-purple-950/50 dark:text-purple-300">
+                              🔒 Protected
+                            </span>
+                          )}
+                          {url.expiresAt && new Date() > new Date(url.expiresAt) && (
+                            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-950/50 dark:text-red-300">
+                              Expired
+                            </span>
+                          )}
+                          {url.maxClicks && url.clicks >= url.maxClicks && (
+                            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-950/50 dark:text-red-300">
+                              Capped
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -276,6 +320,28 @@ export default function UrlsList({ initialUrls }) {
                           </svg>
                           Analytics
                         </Link>
+
+                        {/* Quick Pause / Resume Button */}
+                        <button
+                          onClick={() => handleToggleActive(url)}
+                          className={`rounded-lg border p-1 transition-colors ${
+                            url.isActive
+                              ? "border-zinc-200 text-zinc-600 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-amber-400 dark:hover:bg-amber-950/30"
+                              : "border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          }`}
+                          title={url.isActive ? "Pause redirects" : "Resume redirects"}
+                        >
+                          {url.isActive ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="6" y="4" width="4" height="16" />
+                              <rect x="14" y="4" width="4" height="16" />
+                            </svg>
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                          )}
+                        </button>
 
                         {/* QR Code Button */}
                         <button

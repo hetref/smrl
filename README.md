@@ -168,8 +168,11 @@ Log analytics for a short URL (public endpoint)
 }
 ```
 
+### POST /api/urls/verify-password
+Verify password for a password-protected short link (public endpoint with rate-limiting). Sets a 15-minute secure HTTP-only session token cookie upon success.
+
 ### GET /r/[slug]
-Redirect to target URL (public endpoint)
+Redirect to target URL (public endpoint with security gates for password, active state, expiration date, click limit cap, and query parameter forwarding).
 
 ## Database Schema
 
@@ -179,7 +182,13 @@ Redirect to target URL (public endpoint)
 - `targetUrl` (String) - Target URL
 - `userId` (String?) - Clerk User ID (for ownership and authorization)
 - `clicks` (Int) - Total click count
+- `maxClicks` (Int?) - Optional maximum click limit
+- `expiresAt` (DateTime?) - Optional expiration date/time
+- `passwordHash` (String?) - Optional scrypt password hash
+- `passwordSalt` (String?) - Optional cryptographic salt
+- `isActive` (Boolean) - Link pause/resume status (default: true)
 - `createdAt` (DateTime) - Creation timestamp
+- `updatedAt` (DateTime) - Update timestamp
 
 ### ClickLog
 - `id` (UUID) - Primary key

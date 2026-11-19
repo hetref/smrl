@@ -13,16 +13,23 @@ datasource db {
 }
 
 model ShortUrl {
-  id        String     @id @default(uuid())
-  slug      String     @unique
-  targetUrl String
-  userId    String?
-  clicks    Int        @default(0)
-  createdAt DateTime   @default(now())
-  ClickLog  ClickLog[]
+  id           String     @id @default(uuid())
+  slug         String     @unique
+  targetUrl    String
+  userId       String?
+  clicks       Int        @default(0)
+  maxClicks    Int?
+  expiresAt    DateTime?
+  passwordHash String?
+  passwordSalt String?
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+  ClickLog     ClickLog[]
 
   @@index([createdAt])
   @@index([userId])
+  @@index([isActive])
 }
 
 model ClickLog {

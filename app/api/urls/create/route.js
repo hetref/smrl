@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAllowedUser } from "@/lib/auth";
+import { hashPassword } from "@/lib/security";
 import prisma from "@/lib/prisma";
 import { generateSlug } from "@/lib/slug";
 
@@ -17,7 +18,19 @@ export async function POST(request) {
     const { userId } = authResult;
 
     const body = await request.json();
-    const { targetUrl, customSlug } = body;
+    const {
+      targetUrl,
+      customSlug,
+      password,
+      expiresAt,
+      maxClicks,
+      isActive,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
+    } = body;
 
     // Validate targetUrl
     if (!targetUrl) {
@@ -43,6 +56,15 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    // Append optional UTM tags to destination URL
+    if (utmSource) parsedTargetUrl.searchParams.set("utm_source", utmSource);
+    if (utmMedium) parsedTargetUrl.searchParams.set("utm_medium", utmMedium);
+    if (utmCampaign) parsedTargetUrl.searchParams.set("utm_campaign", utmCampaign);
+    if (utmTerm) parsedTargetUrl.searchParams.set("utm_term", utmTerm);
+    if (utmContent) parsedTargetUrl.searchParams.set("utm_content", utmContent);
+
+    const finalTargetUrl = parsedTargetUrl.toString();
 
     // Prevent redirect loops (pointing to the shortener itself)
     const host = request.headers.get("host");
@@ -102,12 +124,46 @@ export async function POST(request) {
       }
     }
 
+    // Process optional password protection
+    let passwordHash = null;
+    let passwordSalt = null;
+    if (password && password.trim()) {
+      const hashed = hashPassword(password.trim());
+      if (hashed) {
+        passwordHash = hashed.hash;
+        passwordSalt = hashed.salt;
+      }
+    }
+
+    // Process optional expiration date
+    let parsedExpiresAt = null;
+    if (expiresAt) {
+      const d = new Date(expiresAt);
+      if (!isNaN(d.getTime())) {
+        parsedExpiresAt = d;
+      }
+    }
+
+    // Process optional click limit
+    let parsedMaxClicks = null;
+    if (maxClicks !== undefined && maxClicks !== null && maxClicks !== "") {
+      const parsed = parseInt(maxClicks, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        parsedMaxClicks = parsed;
+      }
+    }
+
     // Create short URL
     const shortUrl = await prisma.shortUrl.create({
       data: {
         slug,
-        targetUrl,
-        userId
+        targetUrl: finalTargetUrl,
+        userId,
+        passwordHash,
+        passwordSalt,
+        expiresAt: parsedExpiresAt,
+        maxClicks: parsedMaxClicks,
+        isActive: typeof isActive === "boolean" ? isActive : true,
       }
     });
 
@@ -124,6 +180,10 @@ export async function POST(request) {
         slug: shortUrl.slug,
         shortUrl: fullShortUrl,
         targetUrl: shortUrl.targetUrl,
+        isPasswordProtected: !!shortUrl.passwordHash,
+        expiresAt: shortUrl.expiresAt ? shortUrl.expiresAt.toISOString() : null,
+        maxClicks: shortUrl.maxClicks,
+        isActive: shortUrl.isActive,
         createdAt: shortUrl.createdAt.toISOString()
       },
       { status: 201 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAllowedUser } from "@/lib/auth";
+import { hashPassword } from "@/lib/security";
 import prisma from "@/lib/prisma";
 
 export async function PATCH(request) {
@@ -16,19 +17,21 @@ export async function PATCH(request) {
     const { userId } = authResult;
 
     const body = await request.json();
-    const { id, newSlug, newTargetUrl } = body;
+    const {
+      id,
+      newSlug,
+      newTargetUrl,
+      password,
+      removePassword,
+      expiresAt,
+      maxClicks,
+      isActive,
+    } = body;
 
     // Validate inputs
     if (!id) {
       return NextResponse.json(
         { error: "URL ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!newSlug && !newTargetUrl) {
-      return NextResponse.json(
-        { error: "At least one field (slug or target URL) must be provided" },
         { status: 400 }
       );
     }
@@ -111,6 +114,41 @@ export async function PATCH(request) {
     if (newTargetUrl) updateData.targetUrl = newTargetUrl;
     if (!existingUrl.userId) updateData.userId = userId;
 
+    if (typeof isActive === "boolean") {
+      updateData.isActive = isActive;
+    }
+
+    if (removePassword) {
+      updateData.passwordHash = null;
+      updateData.passwordSalt = null;
+    } else if (password && password.trim()) {
+      const hashed = hashPassword(password.trim());
+      if (hashed) {
+        updateData.passwordHash = hashed.hash;
+        updateData.passwordSalt = hashed.salt;
+      }
+    }
+
+    if (expiresAt !== undefined) {
+      if (expiresAt === null || expiresAt === "") {
+        updateData.expiresAt = null;
+      } else {
+        const d = new Date(expiresAt);
+        if (!isNaN(d.getTime())) {
+          updateData.expiresAt = d;
+        }
+      }
+    }
+
+    if (maxClicks !== undefined) {
+      if (maxClicks === null || maxClicks === "") {
+        updateData.maxClicks = null;
+      } else {
+        const parsed = parseInt(maxClicks, 10);
+        updateData.maxClicks = !isNaN(parsed) && parsed > 0 ? parsed : null;
+      }
+    }
+
     // Update the URL
     const updatedUrl = await prisma.shortUrl.update({
       where: { id },
@@ -125,6 +163,7 @@ export async function PATCH(request) {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/urls");
     revalidatePath(`/dashboard/urls/${id}/edit`);
+    revalidatePath(`/dashboard/urls/${id}/stats`);
 
     return NextResponse.json(
       {
@@ -133,6 +172,10 @@ export async function PATCH(request) {
         shortUrl: fullShortUrl,
         targetUrl: updatedUrl.targetUrl,
         clicks: updatedUrl.clicks,
+        isPasswordProtected: !!updatedUrl.passwordHash,
+        expiresAt: updatedUrl.expiresAt ? updatedUrl.expiresAt.toISOString() : null,
+        maxClicks: updatedUrl.maxClicks,
+        isActive: updatedUrl.isActive,
         createdAt: updatedUrl.createdAt.toISOString()
       },
       { status: 200 }

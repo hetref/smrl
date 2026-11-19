@@ -8,6 +8,16 @@ import CopyButton from "../urls/CopyButton";
 export default function NewUrlPage() {
   const [targetUrl, setTargetUrl] = useState("");
   const [customSlug, setCustomSlug] = useState("");
+  const [password, setPassword] = useState("");
+  const [enablePassword, setEnablePassword] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
+  const [enableExpires, setEnableExpires] = useState(false);
+  const [maxClicks, setMaxClicks] = useState("");
+  const [enableMaxClicks, setEnableMaxClicks] = useState(false);
+  const [showUtmBuilder, setShowUtmBuilder] = useState(false);
+  const [utmSource, setUtmSource] = useState("");
+  const [utmMedium, setUtmMedium] = useState("");
+  const [utmCampaign, setUtmCampaign] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -29,6 +39,12 @@ export default function NewUrlPage() {
         body: JSON.stringify({
           targetUrl,
           customSlug: customSlug.trim() || undefined,
+          password: enablePassword && password.trim() ? password.trim() : undefined,
+          expiresAt: enableExpires && expiresAt ? expiresAt : undefined,
+          maxClicks: enableMaxClicks && maxClicks ? maxClicks : undefined,
+          utmSource: showUtmBuilder && utmSource.trim() ? utmSource.trim() : undefined,
+          utmMedium: showUtmBuilder && utmMedium.trim() ? utmMedium.trim() : undefined,
+          utmCampaign: showUtmBuilder && utmCampaign.trim() ? utmCampaign.trim() : undefined,
         }),
       });
 
@@ -41,13 +57,18 @@ export default function NewUrlPage() {
 
       setResult(data);
 
-      // Generate QR code for result
       QRCode.toDataURL(data.shortUrl, { width: 240, margin: 2 })
         .then((url) => setQrDataUrl(url))
         .catch(() => {});
 
       setTargetUrl("");
       setCustomSlug("");
+      setPassword("");
+      setExpiresAt("");
+      setMaxClicks("");
+      setUtmSource("");
+      setUtmMedium("");
+      setUtmCampaign("");
     } catch (err) {
       setError("An error occurred while creating the URL. Please try again.");
     } finally {
@@ -89,7 +110,7 @@ export default function NewUrlPage() {
           Create Short Link
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
-          Turn long destination URLs into fast, trackable redirects.
+          Turn long destination URLs into secure, trackable redirects with advanced gates.
         </p>
       </div>
 
@@ -145,7 +166,6 @@ export default function NewUrlPage() {
             </div>
             <p className="text-[11px] text-zinc-400">
               4-200 characters (letters, numbers, dashes, and underscores only).
-              Leave empty for an auto-generated random slug.
             </p>
           </div>
 
@@ -159,6 +179,229 @@ export default function NewUrlPage() {
             </p>
           </div>
 
+          {/* Advanced Protection & Gates Collapsible Sections */}
+          <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Security & Controls
+            </p>
+
+            {/* Password Protection Gate */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-zinc-600 dark:text-zinc-400"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span className="text-xs font-semibold text-black dark:text-white">
+                    Password Protection
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enablePassword}
+                  onChange={(e) => setEnablePassword(e.target.checked)}
+                  className="h-4 w-4 rounded accent-black"
+                />
+              </div>
+
+              {enablePassword && (
+                <div className="pt-2">
+                  <input
+                    type="password"
+                    placeholder="Set link access password..."
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required={enablePassword}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                  />
+                  <p className="mt-1.5 text-[10px] text-zinc-400">
+                    Visitors must enter this password before being redirected. Destination URL is never leaked.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Expiration Date Gate */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-zinc-600 dark:text-zinc-400"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span className="text-xs font-semibold text-black dark:text-white">
+                    Expiration Date
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enableExpires}
+                  onChange={(e) => setEnableExpires(e.target.checked)}
+                  className="h-4 w-4 rounded accent-black"
+                />
+              </div>
+
+              {enableExpires && (
+                <div className="pt-2">
+                  <input
+                    type="datetime-local"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    required={enableExpires}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                  />
+                  <p className="mt-1.5 text-[10px] text-zinc-400">
+                    The short link will automatically stop redirecting after this timestamp.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Click Capacity Gate */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-zinc-600 dark:text-zinc-400"
+                  >
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                  <span className="text-xs font-semibold text-black dark:text-white">
+                    Click Limit Cap
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enableMaxClicks}
+                  onChange={(e) => setEnableMaxClicks(e.target.checked)}
+                  className="h-4 w-4 rounded accent-black"
+                />
+              </div>
+
+              {enableMaxClicks && (
+                <div className="pt-2">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 50 (maximum clicks allowed)"
+                    value={maxClicks}
+                    onChange={(e) => setMaxClicks(e.target.value)}
+                    required={enableMaxClicks}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                  />
+                  <p className="mt-1.5 text-[10px] text-zinc-400">
+                    The link will automatically deactivate after reaching this number of clicks.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* UTM Campaign Builder */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowUtmBuilder(!showUtmBuilder)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-zinc-600 dark:text-zinc-400"
+                  >
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                  </svg>
+                  <span className="text-xs font-semibold text-black dark:text-white">
+                    UTM Campaign Builder
+                  </span>
+                </div>
+                <span className="text-xs text-zinc-400 font-mono">
+                  {showUtmBuilder ? "−" : "+"}
+                </span>
+              </button>
+
+              {showUtmBuilder && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                  <div>
+                    <label className="block text-[10px] uppercase font-semibold text-zinc-500 mb-1">
+                      utm_source
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. twitter"
+                      value={utmSource}
+                      onChange={(e) => setUtmSource(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs text-black focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-semibold text-zinc-500 mb-1">
+                      utm_medium
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. social"
+                      value={utmMedium}
+                      onChange={(e) => setUtmMedium(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs text-black focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-semibold text-zinc-500 mb-1">
+                      utm_campaign
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. launch2026"
+                      value={utmCampaign}
+                      onChange={(e) => setUtmCampaign(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs text-black focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {error && (
             <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-200/80 dark:border-red-900/50">
               {error}
@@ -170,11 +413,11 @@ export default function NewUrlPage() {
             disabled={loading || !targetUrl}
             className="w-full rounded-xl bg-black py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            {loading ? "Generating Short Link..." : "Create Short Link"}
+            {loading ? "Generating Protected Short Link..." : "Create Short Link"}
           </button>
         </form>
 
-        {/* Success Modal / Card */}
+        {/* Success Card */}
         {result && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-900/50 dark:bg-emerald-950/20 space-y-5 animate-in fade-in duration-200">
             <div className="flex items-center gap-2">
@@ -186,7 +429,6 @@ export default function NewUrlPage() {
               </h3>
             </div>
 
-            {/* Generated Link Box */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-emerald-200/80 bg-white p-3 dark:border-emerald-900/40 dark:bg-zinc-900">
               <span className="font-mono text-xs font-semibold text-black dark:text-white truncate">
                 {result.shortUrl}
@@ -204,7 +446,6 @@ export default function NewUrlPage() {
               </div>
             </div>
 
-            {/* QR Code and Actions */}
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
               {qrDataUrl && (
                 <div className="p-2 bg-white rounded-lg border border-zinc-200 shadow-sm shrink-0">
@@ -217,11 +458,11 @@ export default function NewUrlPage() {
               )}
               <div className="flex-1 space-y-2 text-center sm:text-left">
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Your short link is now active and ready to share across platforms.
+                  Your short link is now active and protected according to your security configuration.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
                   <Link
-                    href={`/dashboard/urls`}
+                    href="/dashboard/urls"
                     className="rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                   >
                     View in All Links

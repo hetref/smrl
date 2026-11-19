@@ -12,6 +12,11 @@ export default function EditUrlPage() {
   const [url, setUrl] = useState(null);
   const [newSlug, setNewSlug] = useState("");
   const [newTargetUrl, setNewTargetUrl] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [password, setPassword] = useState("");
+  const [removePassword, setRemovePassword] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
+  const [maxClicks, setMaxClicks] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -53,6 +58,16 @@ export default function EditUrlPage() {
         setUrl(data);
         setNewSlug(data.slug);
         setNewTargetUrl(data.targetUrl);
+        setIsActive(typeof data.isActive === "boolean" ? data.isActive : true);
+        setMaxClicks(data.maxClicks ? String(data.maxClicks) : "");
+        if (data.expiresAt) {
+          // Format for datetime-local
+          const d = new Date(data.expiresAt);
+          const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+          setExpiresAt(localIso);
+        }
       } catch (err) {
         setError(err.message || "Failed to load URL details");
       } finally {
@@ -81,6 +96,11 @@ export default function EditUrlPage() {
           id: urlId,
           newSlug,
           newTargetUrl,
+          isActive,
+          password: password.trim() || undefined,
+          removePassword,
+          expiresAt: expiresAt || null,
+          maxClicks: maxClicks ? parseInt(maxClicks, 10) : null,
         }),
       });
 
@@ -93,6 +113,8 @@ export default function EditUrlPage() {
 
       setSuccess(true);
       setUrl(data);
+      setPassword("");
+      setRemovePassword(false);
 
       setTimeout(() => {
         router.push("/dashboard/urls");
@@ -165,25 +187,42 @@ export default function EditUrlPage() {
           Edit Short Link
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
-          Update the destination target or custom slug without changing click history.
+          Update the destination, custom slug, password, or expiration settings.
         </p>
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 md:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-6">
-        {/* Current Info Ribbon */}
-        <div className="grid grid-cols-2 gap-4 rounded-xl bg-zinc-50/70 p-4 dark:bg-zinc-800/30 border border-zinc-200/80 dark:border-zinc-800 text-xs">
+        {/* Status Ribbon & Controls */}
+        <div className="flex items-center justify-between rounded-xl bg-zinc-50/70 p-4 dark:bg-zinc-800/30 border border-zinc-200/80 dark:border-zinc-800">
           <div>
-            <span className="text-zinc-400">Current Slug:</span>
-            <p className="mt-0.5 font-mono font-semibold text-black dark:text-white">
-              /{url.slug}
-            </p>
+            <span className="text-xs text-zinc-400 block">Link Status</span>
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold mt-1 ${
+                isActive
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isActive ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+              />
+              {isActive ? "Active (Redirecting)" : "Paused (Redirects Blocked)"}
+            </span>
           </div>
-          <div>
-            <span className="text-zinc-400">Total Clicks Recorded:</span>
-            <p className="mt-0.5 font-semibold text-black dark:text-white">
-              {url.clicks.toLocaleString()}
-            </p>
-          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsActive(!isActive)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              isActive
+                ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300"
+                : "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300"
+            }`}
+          >
+            {isActive ? "Pause Link" : "Resume Link"}
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -204,9 +243,6 @@ export default function EditUrlPage() {
               required
               className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm text-black placeholder-zinc-400 transition-all focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-500 dark:focus:border-white dark:focus:bg-zinc-800"
             />
-            <p className="text-[11px] text-zinc-400">
-              Where visitors will be immediately redirected upon accessing the short link.
-            </p>
           </div>
 
           {/* Slug */}
@@ -232,9 +268,107 @@ export default function EditUrlPage() {
                 className="w-full bg-transparent px-3 py-3 text-sm text-black placeholder-zinc-400 focus:outline-none dark:text-white dark:placeholder-zinc-500 font-mono"
               />
             </div>
-            <p className="text-[11px] text-zinc-400">
-              4-200 alphanumeric characters, dashes, and underscores only.
+          </div>
+
+          {/* Security & Expiration Settings */}
+          <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Security & Access Control
             </p>
+
+            {/* Password Management */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-semibold text-black dark:text-white block">
+                    Password Protection
+                  </span>
+                  <span className="text-[11px] text-zinc-400">
+                    {url.isPasswordProtected
+                      ? "🔒 Link is currently password-protected"
+                      : "No password currently set"}
+                  </span>
+                </div>
+
+                {url.isPasswordProtected && (
+                  <label className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={removePassword}
+                      onChange={(e) => setRemovePassword(e.target.checked)}
+                      className="rounded accent-red-600"
+                    />
+                    <span>Remove Password</span>
+                  </label>
+                )}
+              </div>
+
+              {!removePassword && (
+                <div className="pt-1">
+                  <input
+                    type="password"
+                    placeholder={
+                      url.isPasswordProtected
+                        ? "Enter new password to change..."
+                        : "Set new password..."
+                    }
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Expiration Date */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-black dark:text-white">
+                  Expiration Date
+                </span>
+                {expiresAt && (
+                  <button
+                    type="button"
+                    onClick={() => setExpiresAt("")}
+                    className="text-[11px] text-zinc-400 hover:text-black dark:hover:text-white"
+                  >
+                    Clear expiration
+                  </button>
+                )}
+              </div>
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+              />
+            </div>
+
+            {/* Max Clicks Limit */}
+            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-black dark:text-white">
+                  Max Clicks Limit
+                </span>
+                {maxClicks && (
+                  <button
+                    type="button"
+                    onClick={() => setMaxClicks("")}
+                    className="text-[11px] text-zinc-400 hover:text-black dark:hover:text-white"
+                  >
+                    Clear limit
+                  </button>
+                )}
+              </div>
+              <input
+                type="number"
+                min="1"
+                placeholder="Leave blank for unlimited clicks"
+                value={maxClicks}
+                onChange={(e) => setMaxClicks(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+              />
+            </div>
           </div>
 
           {error && (
@@ -245,7 +379,7 @@ export default function EditUrlPage() {
 
           {success && (
             <div className="rounded-xl bg-emerald-50 p-4 text-xs font-medium text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-900/50">
-              ✓ Link updated successfully! Redirecting to All Links...
+              ✓ Link updated successfully! Redirecting...
             </div>
           )}
 

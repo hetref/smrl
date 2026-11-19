@@ -10,7 +10,6 @@ export default function Navbar() {
   const navLinks = [
     { href: "/dashboard", label: "Overview" },
     { href: "/dashboard/urls", label: "All Links" },
-    { href: "/dashboard/new", label: "Create Link" },
   ];
 
   return (
@@ -72,7 +71,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/new"
-            className="hidden items-center gap-1.5 rounded-lg bg-black px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 md:inline-flex"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
             <svg
               width="14"
