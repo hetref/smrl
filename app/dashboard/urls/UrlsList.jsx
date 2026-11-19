@@ -330,18 +330,19 @@ export default function UrlsList({ initialUrls }) {
       ) : (
         <>
           {/* Desktop Table View (Hidden on mobile) */}
-          <div className="hidden md:block overflow-hidden rounded-3xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <table className="w-full text-left">
-              <thead className="border-b border-zinc-100 bg-zinc-50/70 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-400">
-                <tr>
-                  <th className="px-6 py-4">Short Link</th>
-                  <th className="px-6 py-4">Destination</th>
-                  <th className="px-6 py-4 text-center">Clicks</th>
-                  <th className="px-6 py-4">Created</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
+          <div className="hidden md:block rounded-3xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] text-left">
+                <thead className="border-b border-zinc-100 bg-zinc-50/70 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-400">
+                  <tr>
+                    <th className="px-6 py-4 min-w-[260px]">Short Link</th>
+                    <th className="px-6 py-4 min-w-[260px]">Destination</th>
+                    <th className="px-6 py-4 text-center min-w-[90px]">Clicks</th>
+                    <th className="px-6 py-4 min-w-[120px]">Created</th>
+                    <th className="px-6 py-4 text-right min-w-[230px]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
                 {filteredUrls.map((url) => {
                   const isExpired = url.expiresAt && new Date() > new Date(url.expiresAt);
                   const isCapped = url.maxClicks && url.clicks >= url.maxClicks;
@@ -352,7 +353,7 @@ export default function UrlsList({ initialUrls }) {
                       className="group transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
                     >
                       {/* Short Link Column */}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[260px]">
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-zinc-950 dark:text-white">
@@ -409,7 +410,7 @@ export default function UrlsList({ initialUrls }) {
                       </td>
 
                       {/* Destination Column */}
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 min-w-[260px]">
                         <div className="flex items-center gap-2 max-w-sm">
                           <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                           <span
@@ -422,14 +423,14 @@ export default function UrlsList({ initialUrls }) {
                       </td>
 
                       {/* Clicks Column */}
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <td className="px-6 py-4 text-center whitespace-nowrap min-w-[90px]">
                         <span className="inline-flex items-center rounded-xl bg-zinc-100 px-3 py-1 font-mono text-xs font-semibold text-zinc-900 dark:bg-zinc-800 dark:text-zinc-200">
                           {url.clicks.toLocaleString()}
                         </span>
                       </td>
 
                       {/* Created Date */}
-                      <td className="px-6 py-4 whitespace-nowrap text-zinc-500 text-[11px]">
+                      <td className="px-6 py-4 whitespace-nowrap text-zinc-500 text-[11px] min-w-[120px]">
                         {new Date(url.createdAt).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -438,7 +439,7 @@ export default function UrlsList({ initialUrls }) {
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <td className="px-6 py-4 text-right whitespace-nowrap min-w-[230px]">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Analytics */}
                           <Link
@@ -510,6 +511,7 @@ export default function UrlsList({ initialUrls }) {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Mobile Card View (Shown on screens < 768px) */}
