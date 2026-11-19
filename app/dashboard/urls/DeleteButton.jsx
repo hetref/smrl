@@ -9,8 +9,9 @@ export default function DeleteButton({ id, slug }) {
 
   const handleDelete = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const confirmed = window.confirm(
-      `Are you sure you want to delete the short URL for "${slug}"? This action cannot be undone.`
+      `Are you sure you want to delete the short URL for "/${slug}"?\nThis will remove the link and all its click logs permanently.`
     );
     if (!confirmed) return;
 
@@ -39,10 +40,25 @@ export default function DeleteButton({ id, slug }) {
     <button
       onClick={handleDelete}
       disabled={isDeleting}
-      className="text-sm font-medium text-red-600 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-      title="Delete short URL"
+      className="rounded-lg border border-transparent p-1 text-zinc-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:border-red-900/50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+      title="Delete short link"
     >
-      {isDeleting ? "Deleting..." : "Delete"}
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 6h18" />
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+        <line x1="10" y1="11" x2="10" y2="17" />
+        <line x1="14" y1="11" x2="14" y2="17" />
+      </svg>
     </button>
   );
 }

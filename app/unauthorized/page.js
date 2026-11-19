@@ -7,10 +7,10 @@ export default async function UnauthorizedPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black px-6">
-      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200/60 dark:border-red-900/40">
           <svg
-            className="h-7 w-7"
+            className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -25,28 +25,28 @@ export default async function UnauthorizedPage() {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+        <h1 className="text-xl font-bold tracking-tight text-black dark:text-white">
           Access Restricted
         </h1>
-        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-          This SMRL instance is private and configured to allow only the designated administrator.
+        <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
+          This SMRL instance is private and restricted exclusively to the authorized administrator account.
         </p>
 
         {userId && (
-          <div className="mt-4 rounded-lg bg-zinc-100 p-3 text-xs font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 break-all">
-            Signed in as: <span className="font-semibold">{userId}</span>
+          <div className="mt-4 rounded-xl bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 break-all border border-zinc-200/80 dark:border-zinc-800">
+            Account: <span className="font-semibold text-black dark:text-white">{userId}</span>
           </div>
         )}
 
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-2.5">
           <SignOutButton>
-            <button className="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+            <button className="w-full rounded-xl bg-black px-4 py-2.5 text-xs font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-sm">
               Sign Out & Switch Account
             </button>
           </SignOutButton>
           <Link
             href="/"
-            className="w-full rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="w-full rounded-xl border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             Return to Home
           </Link>

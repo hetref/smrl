@@ -2,8 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import CopyButton from "./CopyButton";
-import DeleteButton from "./DeleteButton";
+import UrlsList from "./UrlsList";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +15,7 @@ export default async function UrlsPage() {
 
   const userFilter = userId
     ? {
-        OR: [{ userId }, { userId: null }, { userId: "" }]
+        OR: [{ userId }, { userId: null }, { userId: "" }],
       }
     : {};
 
@@ -24,123 +23,53 @@ export default async function UrlsPage() {
   const urls = await prisma.shortUrl.findMany({
     where: userFilter,
     orderBy: {
-      createdAt: "desc"
-    }
+      createdAt: "desc",
+    },
   });
 
+  const serializedUrls = urls.map((u) => ({
+    id: u.id,
+    slug: u.slug,
+    targetUrl: u.targetUrl,
+    clicks: u.clicks,
+    createdAt: u.createdAt.toISOString(),
+  }));
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8">
-          <Link
-            href="/dashboard"
-            className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
-
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-black dark:text-white">
-            All URLs
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      {/* Page Title */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+            All Short Links
           </h1>
-          <Link
-            href="/dashboard/new"
-            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          <p className="mt-1 text-xs text-zinc-500">
+            Manage your branded slugs, monitor click counters, and access analytics.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/new"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black px-4 py-2.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            Create Short URL
-          </Link>
-        </div>
-
-        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          {urls.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="mb-4 text-zinc-600 dark:text-zinc-400">
-                No URLs yet. Create your first short URL!
-              </p>
-              <Link
-                href="/dashboard/new"
-                className="inline-block rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-              >
-                Create Short URL
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b border-zinc-200 dark:border-zinc-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Slug
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Target URL
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Clicks
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {urls.map((url) => (
-                    <tr key={url.id}>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-black dark:text-white">
-                            {url.slug}
-                          </span>
-                          <a
-                            href={`/r/${url.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-zinc-500 hover:text-black dark:hover:text-white"
-                            title="Open short URL"
-                          >
-                            ↗
-                          </a>
-                          <CopyButton slug={url.slug} />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="max-w-md truncate text-sm text-zinc-600 dark:text-zinc-400">
-                          {url.targetUrl}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {url.clicks}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {new Date(url.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <Link
-                            href={`/dashboard/urls/${url.id}/edit`}
-                            className="text-sm font-medium text-black hover:text-zinc-600 dark:text-white dark:hover:text-zinc-400"
-                          >
-                            Edit
-                          </Link>
-                          <DeleteButton id={url.id} slug={url.slug} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-4 text-center text-sm text-zinc-500">
-          Total: {urls.length} URL{urls.length !== 1 ? "s" : ""}
-        </div>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Create Short URL
+        </Link>
       </div>
+
+      {/* Interactive List */}
+      <UrlsList initialUrls={serializedUrls} />
     </div>
   );
 }
