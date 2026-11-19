@@ -1,20 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
+import ConfirmModal from "@/app/components/ConfirmModal";
+import { useToast } from "@/app/components/ToastContext";
 
-export default function DeleteButton({ id, slug }) {
+export default function DeleteButton({ id, slug, onDeleted }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const router = useRouter();
+  const { success, error } = useToast();
 
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the short URL for "/${slug}"?\nThis will remove the link and all its click logs permanently.`
-    );
-    if (!confirmed) return;
-
+  const handleDelete = async () => {
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/urls/${id}`, {
@@ -23,42 +19,42 @@ export default function DeleteButton({ id, slug }) {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || "Failed to delete URL");
-        return;
+        throw new Error(data.error || "Failed to delete link");
       }
 
-      router.refresh();
+      success("Link deleted", `/${slug} has been permanently removed.`);
+      setIsOpen(false);
+      if (onDeleted) {
+        onDeleted(id);
+      }
     } catch (err) {
       console.error("Error deleting URL:", err);
-      alert("An error occurred while deleting the URL.");
+      error("Delete failed", err.message || "An error occurred while deleting.");
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <button
-      onClick={handleDelete}
-      disabled={isDeleting}
-      className="rounded-lg border border-transparent p-1 text-zinc-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:border-red-900/50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-      title="Delete short link"
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="rounded-lg p-1.5 text-zinc-400 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+        title="Delete short link"
       >
-        <path d="M3 6h18" />
-        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-      </svg>
-    </button>
+        <Trash2 className="h-4 w-4" />
+      </button>
+
+      <ConfirmModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Delete this short link?"
+        description={`This will permanently remove "/${slug}" and erase all associated click history and analytics. This action cannot be reversed.`}
+        confirmText="Delete Link"
+      />
+    </>
   );
 }

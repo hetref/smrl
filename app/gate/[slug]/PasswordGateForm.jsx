@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff, Lock, ArrowRight } from "lucide-react";
 
 export default function PasswordGateForm({ slug }) {
   const [password, setPassword] = useState("");
@@ -28,7 +29,7 @@ export default function PasswordGateForm({ slug }) {
         throw new Error(data.error || "Incorrect password");
       }
 
-      // Immediately navigate to the short link, which now has the valid auth cookie
+      // Navigate to destination via short URL redirect now that session cookie is set
       window.location.href = data.redirectUrl || `/r/${slug}`;
     } catch (err) {
       setError(err.message || "Failed to verify password");
@@ -54,49 +55,25 @@ export default function PasswordGateForm({ slug }) {
             placeholder="Enter link password..."
             required
             autoFocus
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 pr-10 text-sm text-black placeholder-zinc-400 transition-all focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-500 dark:focus:border-white dark:focus:bg-zinc-800"
+            className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 pr-10 text-xs text-zinc-900 placeholder-zinc-400 transition-all focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-white font-mono"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-black dark:hover:text-white"
+            className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
+              <EyeOff className="h-4 w-4" />
             ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+              <Eye className="h-4 w-4" />
             )}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-200/80 dark:border-red-900/50">
+        <div className="rounded-2xl bg-rose-50/80 p-3.5 text-xs font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/80 dark:border-rose-900/50 text-left">
           {error}
         </div>
       )}
@@ -104,9 +81,22 @@ export default function PasswordGateForm({ slug }) {
       <button
         type="submit"
         disabled={loading || !password}
-        className="w-full rounded-xl bg-black py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
       >
-        {loading ? "Verifying..." : "Unlock & Continue →"}
+        {loading ? (
+          <span className="inline-flex items-center gap-1.5">
+            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Verifying Password...
+          </span>
+        ) : (
+          <>
+            <span>Unlock Destination</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </>
+        )}
       </button>
     </form>
   );

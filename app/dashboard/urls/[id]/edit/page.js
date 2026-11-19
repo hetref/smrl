@@ -3,6 +3,25 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  BarChart3,
+  Globe,
+  Lock,
+  Clock,
+  Ban,
+  Trash2,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Pause,
+  Play,
+  RotateCcw,
+} from "lucide-react";
+import Switch from "@/app/components/Switch";
+import ConfirmModal from "@/app/components/ConfirmModal";
+import { useToast } from "@/app/components/ToastContext";
 
 export default function EditUrlPage() {
   const router = useRouter();
@@ -14,38 +33,18 @@ export default function EditUrlPage() {
   const [newTargetUrl, setNewTargetUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [removePassword, setRemovePassword] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
   const [maxClicks, setMaxClicks] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-
-  const handleDelete = async () => {
-    if (!url) return;
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the short URL "/${url.slug}"?\nThis will remove the link and all its click logs permanently.`
-    );
-    if (!confirmed) return;
-
-    setDeleting(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/urls/${urlId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete URL");
-      }
-      router.push("/dashboard/urls");
-    } catch (err) {
-      setError(err.message || "Failed to delete URL");
-      setDeleting(false);
-    }
-  };
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
     const fetchUrl = async () => {
@@ -61,7 +60,6 @@ export default function EditUrlPage() {
         setIsActive(typeof data.isActive === "boolean" ? data.isActive : true);
         setMaxClicks(data.maxClicks ? String(data.maxClicks) : "");
         if (data.expiresAt) {
-          // Format for datetime-local
           const d = new Date(data.expiresAt);
           const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
             .toISOString()
@@ -80,11 +78,56 @@ export default function EditUrlPage() {
     }
   }, [urlId]);
 
+  const handleDelete = async () => {
+    if (!url) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/urls/${urlId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete link");
+      }
+      success("Link deleted", `/${url.slug} was permanently removed.`);
+      router.push("/dashboard/urls");
+    } catch (err) {
+      toastError("Delete failed", err.message || "Could not delete URL.");
+      setDeleting(false);
+    }
+  };
+
+  const handleResetClicks = async () => {
+    if (!url) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch("/api/urls/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: urlId,
+          resetClicks: true,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to reset clicks");
+      }
+
+      setUrl((prev) => ({ ...prev, clicks: 0 }));
+      success("Clicks counter reset", `Click count for /${url.slug} was reset to 0.`);
+      setIsResetModalOpen(false);
+    } catch (err) {
+      toastError("Reset failed", err.message || "Could not reset clicks.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError("");
-    setSuccess(false);
 
     try {
       const response = await fetch("/api/urls/update", {
@@ -107,20 +150,20 @@ export default function EditUrlPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to update URL");
-        return;
+        throw new Error(data.error || "Failed to update URL");
       }
 
-      setSuccess(true);
       setUrl(data);
       setPassword("");
       setRemovePassword(false);
+      success("Settings saved", `/${data.slug} has been updated.`);
 
       setTimeout(() => {
         router.push("/dashboard/urls");
-      }, 1200);
+      }, 800);
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(err.message || "An error occurred. Please try again.");
+      toastError("Save failed", err.message);
     } finally {
       setSaving(false);
     }
@@ -128,23 +171,24 @@ export default function EditUrlPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center text-xs text-zinc-500">
-        Loading link parameters...
+      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <div className="inline-flex h-8 w-8 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-white dark:border-t-transparent" />
+        <p className="mt-3 text-xs text-zinc-500">Loading link parameters...</p>
       </div>
     );
   }
 
   if (!url) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
           URL not found or access restricted.
         </p>
         <Link
           href="/dashboard/urls"
-          className="mt-4 inline-block text-xs font-medium text-black dark:text-white underline underline-offset-4"
+          className="mt-4 inline-block text-xs font-medium text-zinc-900 dark:text-white underline underline-offset-4"
         >
-          ← Return to All Links
+          Return to All Links
         </Link>
       </div>
     );
@@ -152,262 +196,316 @@ export default function EditUrlPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
-      {/* Breadcrumb */}
+      {/* Top Navigation */}
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/dashboard/urls"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors"
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to All Links
         </Link>
 
         <Link
           href={`/dashboard/urls/${url.id}/stats`}
-          className="text-xs font-medium text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
         >
-          View Analytics →
+          <BarChart3 className="h-3.5 w-3.5" />
+          Analytics
         </Link>
       </div>
 
+      {/* Page Title */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">
-          Edit Short Link
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+          Edit Link Settings
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
-          Update the destination, custom slug, password, or expiration settings.
+          Modify destination, slug, password protection, and automated gates.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 md:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-6">
-        {/* Status Ribbon & Controls */}
-        <div className="flex items-center justify-between rounded-xl bg-zinc-50/70 p-4 dark:bg-zinc-800/30 border border-zinc-200/80 dark:border-zinc-800">
-          <div>
-            <span className="text-xs text-zinc-400 block">Link Status</span>
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold mt-1 ${
+      <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-6">
+        {/* Status Quick Ribbon */}
+        <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 p-4 border border-zinc-200/80 dark:border-zinc-800 dark:bg-zinc-800/30">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-xl ${
                 isActive
-                  ? "text-emerald-700 dark:text-emerald-400"
-                  : "text-amber-700 dark:text-amber-400"
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
+                  : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400"
               }`}
             >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isActive ? "bg-emerald-500" : "bg-amber-500"
-                }`}
-              />
-              {isActive ? "Active (Redirecting)" : "Paused (Redirects Blocked)"}
-            </span>
+              {isActive ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                {isActive ? "Link Active" : "Link Paused"}
+              </p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                {isActive
+                  ? "Redirects are currently operational"
+                  : "Redirects are stopped with a paused interstitial"}
+              </p>
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsActive(!isActive)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              isActive
-                ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300"
-                : "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300"
-            }`}
-          >
-            {isActive ? "Pause Link" : "Resume Link"}
-          </button>
+          <Switch
+            checked={isActive}
+            onChange={setIsActive}
+            ariaLabel="Toggle active status"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Destination URL */}
+          {/* Target URL */}
           <div className="space-y-2">
             <label
-              htmlFor="newTargetUrl"
+              htmlFor="targetUrl"
               className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"
             >
-              Destination Target URL <span className="text-red-500">*</span>
+              Destination URL <span className="text-rose-500">*</span>
             </label>
             <input
               type="url"
-              id="newTargetUrl"
+              id="targetUrl"
               value={newTargetUrl}
               onChange={(e) => setNewTargetUrl(e.target.value)}
-              placeholder="https://example.com"
               required
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm text-black placeholder-zinc-400 transition-all focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-500 dark:focus:border-white dark:focus:bg-zinc-800"
+              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-xs text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-100 dark:focus:border-white font-mono"
             />
           </div>
 
           {/* Slug */}
           <div className="space-y-2">
             <label
-              htmlFor="newSlug"
+              htmlFor="slug"
               className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"
             >
-              Slug Identifier <span className="text-red-500">*</span>
+              Custom Slug <span className="text-rose-500">*</span>
             </label>
-            <div className="flex items-center rounded-xl border border-zinc-200 bg-zinc-50/50 overflow-hidden focus-within:border-black focus-within:ring-1 focus-within:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:focus-within:border-white dark:focus-within:ring-white">
-              <span className="px-3.5 text-xs font-mono text-zinc-400 select-none bg-zinc-100/50 py-3 dark:bg-zinc-800/60 border-r border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center rounded-2xl border border-zinc-200 bg-zinc-50/60 overflow-hidden focus-within:border-zinc-900 focus-within:bg-white focus-within:ring-1 focus-within:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-800/40 dark:focus-within:border-white font-mono">
+              <span className="px-3.5 py-3 text-xs font-mono text-zinc-400 select-none bg-zinc-100/70 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800">
                 /r/
               </span>
               <input
                 type="text"
-                id="newSlug"
+                id="slug"
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
-                placeholder="slug-name"
-                pattern="[a-zA-Z0-9_-]{4,200}"
                 required
-                className="w-full bg-transparent px-3 py-3 text-sm text-black placeholder-zinc-400 focus:outline-none dark:text-white dark:placeholder-zinc-500 font-mono"
+                pattern="[a-zA-Z0-9_-]{4,200}"
+                className="w-full bg-transparent px-3.5 py-3 text-xs text-zinc-900 focus:outline-none dark:text-zinc-100 font-mono"
               />
             </div>
           </div>
 
-          {/* Security & Expiration Settings */}
-          <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Security & Access Control
-            </p>
+          {/* Security & Gate Controls */}
+          <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Security & Capacity Gates</span>
+            </div>
 
-            {/* Password Management */}
-            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-3">
+            {/* Password Gate */}
+            <div className="rounded-2xl border border-zinc-200/80 p-4.5 dark:border-zinc-800 space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-black dark:text-white block">
-                    Password Protection
-                  </span>
-                  <span className="text-[11px] text-zinc-400">
-                    {url.isPasswordProtected
-                      ? "🔒 Link is currently password-protected"
-                      : "No password currently set"}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                      Password Protection
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      {url.isPasswordProtected
+                        ? "Currently password-protected"
+                        : "No password protection active"}
+                    </p>
+                  </div>
                 </div>
 
                 {url.isPasswordProtected && (
-                  <label className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={removePassword}
-                      onChange={(e) => setRemovePassword(e.target.checked)}
-                      className="rounded accent-red-600"
-                    />
-                    <span>Remove Password</span>
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setRemovePassword(!removePassword)}
+                    className={`rounded-xl px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      removePassword
+                        ? "bg-rose-600 text-white"
+                        : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {removePassword ? "Will Remove Password" : "Remove Password"}
+                  </button>
                 )}
               </div>
 
               {!removePassword && (
-                <div className="pt-1">
-                  <input
-                    type="password"
-                    placeholder={
-                      url.isPasswordProtected
-                        ? "Enter new password to change..."
-                        : "Set new password..."
-                    }
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
-                  />
+                <div className="pt-2">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder={
+                        url.isPasswordProtected
+                          ? "Enter new password to change..."
+                          : "Set access password..."
+                      }
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white pl-3.5 pr-10 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                    >
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Expiration Date */}
-            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-2">
+            {/* Expiration Gate */}
+            <div className="rounded-2xl border border-zinc-200/80 p-4.5 dark:border-zinc-800 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-black dark:text-white">
-                  Expiration Date
-                </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                      Time Expiration
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Link becomes inactive after this date
+                    </p>
+                  </div>
+                </div>
+
                 {expiresAt && (
                   <button
                     type="button"
                     onClick={() => setExpiresAt("")}
-                    className="text-[11px] text-zinc-400 hover:text-black dark:hover:text-white"
+                    className="rounded-xl border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
                   >
-                    Clear expiration
+                    Clear Expiry
                   </button>
                 )}
               </div>
+
               <input
                 type="datetime-local"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
               />
             </div>
 
-            {/* Max Clicks Limit */}
-            <div className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-800 space-y-2">
+            {/* Max Clicks */}
+            <div className="rounded-2xl border border-zinc-200/80 p-4.5 dark:border-zinc-800 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-black dark:text-white">
-                  Max Clicks Limit
-                </span>
-                {maxClicks && (
-                  <button
-                    type="button"
-                    onClick={() => setMaxClicks("")}
-                    className="text-[11px] text-zinc-400 hover:text-black dark:hover:text-white"
-                  >
-                    Clear limit
-                  </button>
-                )}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                    <Ban className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                      Click Capacity Limit
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Current clicks: <strong>{url.clicks}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {url.clicks > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsResetModalOpen(true)}
+                      className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50/60 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50 transition-colors"
+                      title="Reset click count to 0"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      <span>Reset to 0</span>
+                    </button>
+                  )}
+                  {maxClicks && (
+                    <button
+                      type="button"
+                      onClick={() => setMaxClicks("")}
+                      className="rounded-xl border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+                    >
+                      Remove Cap
+                    </button>
+                  )}
+                </div>
               </div>
+
               <input
                 type="number"
                 min="1"
                 placeholder="Leave blank for unlimited clicks"
                 value={maxClicks}
                 onChange={(e) => setMaxClicks(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 py-2 text-xs text-black placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-white"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
               />
             </div>
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-200/80 dark:border-red-900/50">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-xs font-medium text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
               {error}
             </div>
           )}
 
-          {success && (
-            <div className="rounded-xl bg-emerald-50 p-4 text-xs font-medium text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-900/50">
-              ✓ Link updated successfully! Redirecting...
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          {/* Action Row */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
             <button
               type="submit"
-              disabled={saving || deleting || success}
-              className="flex-1 rounded-xl bg-black py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              disabled={saving}
+              className="flex w-full sm:flex-1 items-center justify-center gap-2 rounded-2xl bg-black py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
             >
-              {saving ? "Saving Changes..." : "Save Changes"}
+              {saving ? "Saving Changes..." : "Save Link Settings"}
             </button>
+
             <button
               type="button"
-              onClick={handleDelete}
-              disabled={saving || deleting || success}
-              className="rounded-xl border border-red-200 bg-red-50/50 px-4 py-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40"
+              onClick={() => setIsDeleteModalOpen(true)}
+              disabled={saving}
+              className="flex items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/60 px-4 py-3 text-xs font-semibold text-rose-600 hover:bg-rose-100/80 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-400 dark:hover:bg-rose-950/40 transition-colors w-full sm:w-auto cursor-pointer"
             >
-              {deleting ? "Deleting..." : "Delete Link"}
+              <Trash2 className="h-4 w-4" />
+              Delete Link
             </button>
-            <Link
-              href="/dashboard/urls"
-              className="rounded-xl border border-zinc-200 px-4 py-3 text-center text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              Cancel
-            </Link>
           </div>
         </form>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isLoading={deleting}
+        title="Delete this short link?"
+        description={`This will permanently remove "/${url.slug}" and its click history. This cannot be undone.`}
+        confirmText="Permanently Delete"
+      />
+
+      {/* Reset Clicks Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={handleResetClicks}
+        isLoading={isResetting}
+        title="Reset click count to 0?"
+        description={`This will reset clicks for "/${url.slug}" to 0 and permanently delete all visitor click logs for this link.`}
+        confirmText="Reset to 0"
+        variant="warning"
+        icon={RotateCcw}
+      />
     </div>
   );
 }

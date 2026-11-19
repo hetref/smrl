@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, Check } from "lucide-react";
+import { useToast } from "@/app/components/ToastContext";
 
-export default function CopyButton({ slug }) {
+export default function CopyButton({ slug, fullUrl, label, className = "" }) {
   const [copied, setCopied] = useState(false);
+  const { success } = useToast();
 
   const handleCopy = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const shortUrl = `${window.location.origin}/r/${slug}`;
+    const urlToCopy = fullUrl || `${window.location.origin}/r/${slug}`;
 
     try {
-      await navigator.clipboard.writeText(shortUrl);
+      await navigator.clipboard.writeText(urlToCopy);
       setCopied(true);
+      success("Copied to clipboard", urlToCopy);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
@@ -21,46 +25,24 @@ export default function CopyButton({ slug }) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all ${
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-150 active:scale-95 ${
         copied
-          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 ring-1 ring-emerald-500/20"
-          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-      }`}
-      title="Copy short URL to clipboard"
+          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 ring-1 ring-emerald-500/25"
+          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700/80"
+      } ${className}`}
+      title="Copy short link"
     >
       {copied ? (
         <>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span>Copied</span>
+          <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>{label || "Copied"}</span>
         </>
       ) : (
         <>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-          <span>Copy</span>
+          <Copy className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+          <span>{label || "Copy"}</span>
         </>
       )}
     </button>

@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { Download, Copy, Check, X, ExternalLink, QrCode as QrIcon } from "lucide-react";
+import { useToast } from "@/app/components/ToastContext";
 
 export default function QrModal({ isOpen, onClose, slug, targetUrl }) {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const { success } = useToast();
 
   useEffect(() => {
     if (isOpen && slug) {
@@ -13,10 +16,10 @@ export default function QrModal({ isOpen, onClose, slug, targetUrl }) {
       const fullUrl = `${origin}/r/${slug}`;
 
       QRCode.toDataURL(fullUrl, {
-        width: 320,
+        width: 400,
         margin: 2,
         color: {
-          dark: "#000000",
+          dark: "#0a0a0a",
           light: "#ffffff",
         },
       })
@@ -25,25 +28,32 @@ export default function QrModal({ isOpen, onClose, slug, targetUrl }) {
     }
   }, [isOpen, slug]);
 
-  // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
     };
     if (isOpen) {
+      document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
     }
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const fullUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${slug}` : `/r/${slug}`;
+  const fullUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/r/${slug}`
+      : `/r/${slug}`;
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(fullUrl);
       setCopied(true);
+      success("Link copied to clipboard", fullUrl);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
       console.error(e);
@@ -58,104 +68,108 @@ export default function QrModal({ isOpen, onClose, slug, targetUrl }) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    success("QR Code downloaded", `smrl-${slug}-qrcode.png`);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      {/* Frosted Backdrop */}
       <div
-        className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+        onClick={onClose}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
+      />
+
+      {/* Modal Card */}
+      <div
+        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl transition-all dark:border-zinc-800 dark:bg-zinc-900 animate-in zoom-in-95 fade-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-          <div>
-            <h3 className="text-base font-semibold text-black dark:text-white">
-              QR Code
-            </h3>
-            <p className="text-xs text-zinc-500 font-mono">/r/{slug}</p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+              <QrIcon className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-950 dark:text-white">
+                Branded QR Code
+              </h3>
+              <p className="text-[11px] font-mono text-zinc-500">/r/{slug}</p>
+            </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white transition-colors"
+            className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* QR Image Card */}
-        <div className="my-5 flex flex-col items-center justify-center">
-          <div className="p-4 bg-white rounded-xl shadow-inner border border-zinc-200/80">
+        {/* QR Image Frame */}
+        <div className="my-6 flex flex-col items-center justify-center">
+          <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm">
             {qrDataUrl ? (
               <img
                 src={qrDataUrl}
                 alt={`QR code for /r/${slug}`}
-                className="w-52 h-52 object-contain"
+                className="h-48 w-48 object-contain rounded-lg"
               />
             ) : (
-              <div className="w-52 h-52 flex items-center justify-center text-xs text-zinc-400">
-                Generating QR...
+              <div className="flex h-48 w-48 items-center justify-center text-zinc-400">
+                <span className="text-xs">Generating QR...</span>
               </div>
             )}
           </div>
-          <p className="mt-3 text-xs text-zinc-500 truncate max-w-xs text-center">
-            {targetUrl}
+          <p className="mt-3 text-center text-[11px] text-zinc-500 max-w-xs">
+            Scan with any smartphone camera to test instant redirection.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-2">
+        <div className="space-y-2">
           <button
+            type="button"
             onClick={handleDownload}
             disabled={!qrDataUrl}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Download PNG
+            <Download className="h-3.5 w-3.5" />
+            Download High-Res PNG
           </button>
-          <button
-            onClick={handleCopyLink}
-            className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-            {copied ? "Link Copied!" : "Copy Short Link"}
-          </button>
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5 text-zinc-400" />
+                  Copy Link
+                </>
+              )}
+            </button>
+            <a
+              href={fullUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              title="Open short link in new tab"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
       </div>
     </div>

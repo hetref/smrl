@@ -26,6 +26,7 @@ export async function PATCH(request) {
       expiresAt,
       maxClicks,
       isActive,
+      resetClicks,
     } = body;
 
     // Validate inputs
@@ -149,11 +150,29 @@ export async function PATCH(request) {
       }
     }
 
-    // Update the URL
-    const updatedUrl = await prisma.shortUrl.update({
-      where: { id },
-      data: updateData
-    });
+    if (resetClicks) {
+      updateData.clicks = 0;
+    }
+
+    // Update the URL (with transaction if resetting clicks and logs)
+    let updatedUrl;
+    if (resetClicks) {
+      const [u] = await prisma.$transaction([
+        prisma.shortUrl.update({
+          where: { id },
+          data: updateData,
+        }),
+        prisma.clickLog.deleteMany({
+          where: { shortUrlId: id },
+        }),
+      ]);
+      updatedUrl = u;
+    } else {
+      updatedUrl = await prisma.shortUrl.update({
+        where: { id },
+        data: updateData,
+      });
+    }
 
     // Build full short URL
     const protocol = request.headers.get("x-forwarded-proto") || "http";
