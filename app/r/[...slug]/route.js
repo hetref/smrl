@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import prisma from "@/lib/prisma";
 
 // Keep dynamic for real-time redirects
@@ -23,17 +24,33 @@ export async function GET(request, { params }) {
       return new Response("Not Found", { status: 404 });
     }
 
-    // Fire-and-forget analytics (DO NOT await)
-    const url = new URL(request.url);
-    fetch(`${url.origin}/api/urls/stats`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        slug,
-        referrer: request.headers.get("referer"),
-        userAgent: request.headers.get("user-agent"),
-      }),
-    }).catch(() => { });
+    const referrer = request.headers.get("referer");
+    const userAgent = request.headers.get("user-agent");
+
+    // Native Next.js background task: ensures analytics finish without delaying redirect
+    after(async () => {
+      try {
+        await prisma.$transaction([
+          prisma.shortUrl.update({
+            where: { id: record.id },
+            data: {
+              clicks: {
+                increment: 1,
+              },
+            },
+          }),
+          prisma.clickLog.create({
+            data: {
+              shortUrlId: record.id,
+              referrer: referrer || null,
+              userAgent: userAgent || null,
+            },
+          }),
+        ]);
+      } catch (analyticsError) {
+        console.error("Background analytics error:", analyticsError);
+      }
+    });
 
     // Use Response.redirect with 302 temporary redirect
     return Response.redirect(record.targetUrl, 302);

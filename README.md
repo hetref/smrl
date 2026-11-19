@@ -141,6 +141,21 @@ Create a new short URL (requires authentication)
 }
 ```
 
+### PATCH /api/urls/update
+Update an existing short URL (requires authentication and ownership)
+
+**Request:**
+```json
+{
+  "id": "uuid-here",
+  "newSlug": "updated-slug", // optional
+  "newTargetUrl": "https://example.com/new" // optional
+}
+```
+
+### DELETE /api/urls/[id]
+Delete a short URL and its associated click logs (requires authentication and ownership)
+
 ### POST /api/urls/stats
 Log analytics for a short URL (public endpoint)
 
@@ -162,12 +177,13 @@ Redirect to target URL (public endpoint)
 - `id` (UUID) - Primary key
 - `slug` (String) - Unique slug identifier
 - `targetUrl` (String) - Target URL
+- `userId` (String?) - Clerk User ID (for ownership and authorization)
 - `clicks` (Int) - Total click count
 - `createdAt` (DateTime) - Creation timestamp
 
 ### ClickLog
 - `id` (UUID) - Primary key
-- `shortUrlId` (String) - Foreign key to ShortUrl
+- `shortUrlId` (String) - Foreign key to ShortUrl (with cascade delete)
 - `referrer` (String?) - HTTP Referer header
 - `userAgent` (String?) - User-Agent string
 - `createdAt` (DateTime) - Click timestamp

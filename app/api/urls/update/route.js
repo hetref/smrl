@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@clerk/nextjs/server";
+import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function PATCH(request) {
   try {
-    // Check authentication
-    const { userId } = await auth();
-    if (!userId) {
+    // Check authentication and authorization
+    const authResult = await verifyAllowedUser();
+    if (!authResult.authorized) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: authResult.error },
+        { status: authResult.status }
       );
     }
+    const { userId } = authResult;
 
     const body = await request.json();
     const { id, newSlug, newTargetUrl } = body;
@@ -45,11 +46,25 @@ export async function PATCH(request) {
 
     // Validate new target URL if provided
     if (newTargetUrl) {
+      if (!newTargetUrl.startsWith("https://")) {
+        return NextResponse.json(
+          { error: "Target URL must start with https://" },
+          { status: 400 }
+        );
+      }
+      let parsedUrl;
       try {
-        new URL(newTargetUrl);
+        parsedUrl = new URL(newTargetUrl);
       } catch (e) {
         return NextResponse.json(
           { error: "Invalid target URL format" },
+          { status: 400 }
+        );
+      }
+      const host = request.headers.get("host");
+      if (host && parsedUrl.host === host) {
+        return NextResponse.json(
+          { error: "Target URL cannot point to this domain" },
           { status: 400 }
         );
       }
@@ -64,6 +79,14 @@ export async function PATCH(request) {
       return NextResponse.json(
         { error: "URL not found" },
         { status: 404 }
+      );
+    }
+
+    // Check ownership
+    if (existingUrl.userId && existingUrl.userId !== userId) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not own this URL" },
+        { status: 403 }
       );
     }
 
@@ -85,6 +108,7 @@ export async function PATCH(request) {
     const updateData = {};
     if (newSlug) updateData.slug = newSlug;
     if (newTargetUrl) updateData.targetUrl = newTargetUrl;
+    if (!existingUrl.userId) updateData.userId = userId;
 
     // Update the URL
     const updatedUrl = await prisma.shortUrl.update({

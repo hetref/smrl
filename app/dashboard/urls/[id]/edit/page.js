@@ -14,8 +14,33 @@ export default function EditUrlPage() {
   const [newTargetUrl, setNewTargetUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const handleDelete = async () => {
+    if (!url) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this short URL (/r/${url.slug})? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/urls/${urlId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete URL");
+      }
+      router.push("/dashboard/urls");
+    } catch (err) {
+      setError(err.message || "Failed to delete URL");
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch the URL details
@@ -208,14 +233,22 @@ export default function EditUrlPage() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={saving || success}
+                disabled={saving || deleting || success}
                 className="flex-1 rounded-lg bg-black px-4 py-3 font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               >
                 {saving ? "Saving..." : "Update URL"}
               </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={saving || deleting || success}
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40"
+              >
+                {deleting ? "Deleting..." : "Delete URL"}
+              </button>
               <Link
                 href="/dashboard/urls"
-                className="flex-1 rounded-lg border border-zinc-300 px-4 py-3 text-center font-medium text-black transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-800"
+                className="rounded-lg border border-zinc-300 px-4 py-3 text-center font-medium text-black transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-800"
               >
                 Cancel
               </Link>

@@ -1,15 +1,30 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// ISR: Regenerate page every 60 seconds if there's a request
-// Also revalidated on-demand after mutations
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const { authorized, userId } = await verifyAllowedUser();
+
+  if (!authorized) {
+    redirect(userId ? "/unauthorized" : "/sign-in");
+  }
+
+  const userFilter = userId
+    ? {
+        OR: [{ userId }, { userId: null }, { userId: "" }]
+      }
+    : {};
+
   // Fetch statistics
-  const totalUrls = await prisma.shortUrl.count();
+  const totalUrls = await prisma.shortUrl.count({
+    where: userFilter
+  });
 
   const clicksAggregate = await prisma.shortUrl.aggregate({
+    where: userFilter,
     _sum: {
       clicks: true
     }
@@ -18,6 +33,7 @@ export default async function DashboardPage() {
 
   // Fetch recent URLs
   const recentUrls = await prisma.shortUrl.findMany({
+    where: userFilter,
     take: 5,
     orderBy: {
       createdAt: "desc"

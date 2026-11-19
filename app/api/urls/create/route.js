@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@clerk/nextjs/server";
+import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateSlug } from "@/lib/slug";
 
 export async function POST(request) {
   try {
-    // Check authentication
-    const { userId } = await auth();
-    if (!userId) {
+    // Check authentication and user allowance
+    const authResult = await verifyAllowedUser();
+    if (!authResult.authorized) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: authResult.error },
+        { status: authResult.status }
       );
     }
+    const { userId } = authResult;
 
     const body = await request.json();
     const { targetUrl, customSlug } = body;
@@ -29,6 +30,25 @@ export async function POST(request) {
     if (!targetUrl.startsWith("https://")) {
       return NextResponse.json(
         { error: "Target URL must start with https://" },
+        { status: 400 }
+      );
+    }
+
+    let parsedTargetUrl;
+    try {
+      parsedTargetUrl = new URL(targetUrl);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid target URL format" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent redirect loops (pointing to the shortener itself)
+    const host = request.headers.get("host");
+    if (host && parsedTargetUrl.host === host) {
+      return NextResponse.json(
+        { error: "Target URL cannot point to this domain" },
         { status: 400 }
       );
     }
@@ -86,7 +106,8 @@ export async function POST(request) {
     const shortUrl = await prisma.shortUrl.create({
       data: {
         slug,
-        targetUrl
+        targetUrl,
+        userId
       }
     });
 

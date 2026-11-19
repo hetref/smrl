@@ -1,14 +1,28 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import CopyButton from "./CopyButton";
+import DeleteButton from "./DeleteButton";
 
-// ISR: Regenerate page every 60 seconds if there's a request
-// Also revalidated on-demand after mutations
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function UrlsPage() {
+  const { authorized, userId } = await verifyAllowedUser();
+
+  if (!authorized) {
+    redirect(userId ? "/unauthorized" : "/sign-in");
+  }
+
+  const userFilter = userId
+    ? {
+        OR: [{ userId }, { userId: null }, { userId: "" }]
+      }
+    : {};
+
   // Fetch all URLs ordered by creation date
   const urls = await prisma.shortUrl.findMany({
+    where: userFilter,
     orderBy: {
       createdAt: "desc"
     }
@@ -105,12 +119,15 @@ export default async function UrlsPage() {
                         {new Date(url.createdAt).toLocaleDateString()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <Link
-                          href={`/dashboard/urls/${url.id}/edit`}
-                          className="text-sm font-medium text-black hover:text-zinc-600 dark:text-white dark:hover:text-zinc-400"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex items-center gap-4">
+                          <Link
+                            href={`/dashboard/urls/${url.id}/edit`}
+                            className="text-sm font-medium text-black hover:text-zinc-600 dark:text-white dark:hover:text-zinc-400"
+                          >
+                            Edit
+                          </Link>
+                          <DeleteButton id={url.id} slug={url.slug} />
+                        </div>
                       </td>
                     </tr>
                   ))}

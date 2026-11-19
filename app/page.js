@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 
 export default async function Home() {
   const { userId } = await auth();
+  const allowedUserId = process.env.ALLOWED_USER_ID;
+  const isAllowed = userId && (!allowedUserId || userId === allowedUserId);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -18,12 +20,21 @@ export default async function Home() {
 
         <div className="flex flex-col gap-4 w-full max-w-xs">
           {userId ? (
-            <Link
-              href="/dashboard"
-              className="flex h-12 items-center justify-center rounded-lg bg-black px-6 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Go to Dashboard
-            </Link>
+            isAllowed ? (
+              <Link
+                href="/dashboard"
+                className="flex h-12 items-center justify-center rounded-lg bg-black px-6 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/unauthorized"
+                className="flex h-12 items-center justify-center rounded-lg bg-red-600 px-6 text-white transition-colors hover:bg-red-700"
+              >
+                Access Restricted (Switch Account)
+              </Link>
+            )
           ) : (
             <Link
               href="/sign-in"

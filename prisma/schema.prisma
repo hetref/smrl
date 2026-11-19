@@ -16,11 +16,13 @@ model ShortUrl {
   id        String     @id @default(uuid())
   slug      String     @unique
   targetUrl String
+  userId    String?
   clicks    Int        @default(0)
   createdAt DateTime   @default(now())
   ClickLog  ClickLog[]
 
   @@index([createdAt])
+  @@index([userId])
 }
 
 model ClickLog {
@@ -30,7 +32,7 @@ model ClickLog {
   userAgent  String?
   createdAt  DateTime @default(now())
 
-  ShortUrl ShortUrl @relation(fields: [shortUrlId], references: [id])
+  ShortUrl ShortUrl @relation(fields: [shortUrlId], references: [id], onDelete: Cascade)
 
   @@index([shortUrlId])
   @@index([createdAt])
