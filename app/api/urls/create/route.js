@@ -113,7 +113,6 @@ export async function POST(request) {
 
     // Build full short URL
     const protocol = request.headers.get("x-forwarded-proto") || "http";
-    const host = request.headers.get("host");
     const fullShortUrl = `${protocol}://${host}/r/${slug}`;
 
     // Revalidate dashboard pages to show new URL

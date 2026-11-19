@@ -44,6 +44,8 @@ export async function PATCH(request) {
       }
     }
 
+    const host = request.headers.get("host");
+
     // Validate new target URL if provided
     if (newTargetUrl) {
       if (!newTargetUrl.startsWith("https://")) {
@@ -61,7 +63,6 @@ export async function PATCH(request) {
           { status: 400 }
         );
       }
-      const host = request.headers.get("host");
       if (host && parsedUrl.host === host) {
         return NextResponse.json(
           { error: "Target URL cannot point to this domain" },
@@ -118,7 +119,6 @@ export async function PATCH(request) {
 
     // Build full short URL
     const protocol = request.headers.get("x-forwarded-proto") || "http";
-    const host = request.headers.get("host");
     const fullShortUrl = `${protocol}://${host}/r/${updatedUrl.slug}`;
 
     // Revalidate dashboard pages to show updated URL
