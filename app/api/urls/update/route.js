@@ -23,6 +23,8 @@ export async function PATCH(request) {
       newTargetUrl,
       password,
       removePassword,
+      requireEmail,
+      leadTitle,
       expiresAt,
       maxClicks,
       isActive,
@@ -119,6 +121,14 @@ export async function PATCH(request) {
       updateData.isActive = isActive;
     }
 
+    if (typeof requireEmail === "boolean") {
+      updateData.requireEmail = requireEmail;
+    }
+
+    if (leadTitle !== undefined) {
+      updateData.leadTitle = leadTitle?.trim() || null;
+    }
+
     if (removePassword) {
       updateData.passwordHash = null;
       updateData.passwordSalt = null;
@@ -192,6 +202,8 @@ export async function PATCH(request) {
         targetUrl: updatedUrl.targetUrl,
         clicks: updatedUrl.clicks,
         isPasswordProtected: !!updatedUrl.passwordHash,
+        requireEmail: updatedUrl.requireEmail,
+        leadTitle: updatedUrl.leadTitle,
         expiresAt: updatedUrl.expiresAt ? updatedUrl.expiresAt.toISOString() : null,
         maxClicks: updatedUrl.maxClicks,
         isActive: updatedUrl.isActive,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { Link2, Plus, LayoutDashboard, ListFilter } from "lucide-react";
+import { Link2, Plus, LayoutDashboard, ListFilter, Users } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/urls", label: "All Links", icon: ListFilter },
+    { href: "/dashboard/leads", label: "Captured Leads", icon: Users },
   ];
 
   return (

@@ -20,9 +20,16 @@ export default async function UrlsPage() {
       }
     : {};
 
-  // Fetch all URLs ordered by creation date
+  // Fetch all URLs with lead counts ordered by creation date
   const urls = await prisma.shortUrl.findMany({
     where: userFilter,
+    include: {
+      _count: {
+        select: {
+          VerifiedLead: true,
+        },
+      },
+    },
     orderBy: {
       createdAt: "desc",
     },
@@ -34,6 +41,9 @@ export default async function UrlsPage() {
     targetUrl: u.targetUrl,
     clicks: u.clicks,
     isPasswordProtected: !!u.passwordHash,
+    requireEmail: !!u.requireEmail,
+    leadTitle: u.leadTitle || "",
+    totalLeads: u._count.VerifiedLead,
     isActive: typeof u.isActive === "boolean" ? u.isActive : true,
     expiresAt: u.expiresAt ? u.expiresAt.toISOString() : null,
     maxClicks: u.maxClicks,
@@ -49,7 +59,7 @@ export default async function UrlsPage() {
             All Short Links
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
-            Manage your branded slugs, monitor click counters, and access analytics.
+            Manage your branded slugs, monitor click counters, lead capture gates, and access analytics.
           </p>
         </div>
         <Link

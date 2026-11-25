@@ -24,9 +24,16 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Fetch the URL
+    // Fetch the URL with lead counts
     const url = await prisma.shortUrl.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            VerifiedLead: true,
+          },
+        },
+      },
     });
 
     if (!url) {
@@ -51,6 +58,9 @@ export async function GET(request, { params }) {
         targetUrl: url.targetUrl,
         clicks: url.clicks,
         isPasswordProtected: !!url.passwordHash,
+        requireEmail: !!url.requireEmail,
+        leadTitle: url.leadTitle || "",
+        totalLeads: url._count.VerifiedLead,
         expiresAt: url.expiresAt ? url.expiresAt.toISOString() : null,
         maxClicks: url.maxClicks,
         isActive: url.isActive,
@@ -108,15 +118,10 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Delete ClickLogs and ShortUrl in a transaction
-    await prisma.$transaction([
-      prisma.clickLog.deleteMany({
-        where: { shortUrlId: id }
-      }),
-      prisma.shortUrl.delete({
-        where: { id }
-      })
-    ]);
+    // Cascade delete handles ClickLog, VerifiedLead, EmailOtp
+    await prisma.shortUrl.delete({
+      where: { id }
+    });
 
     // Revalidate dashboard pages
     revalidatePath("/dashboard");

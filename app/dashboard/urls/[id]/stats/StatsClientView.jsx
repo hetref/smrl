@@ -13,6 +13,10 @@ import {
   Tablet,
   Lock,
   Unlock,
+  Mail,
+  Download,
+  Users,
+  Copy,
   Clock,
   Ban,
   CheckCircle2,
@@ -60,13 +64,22 @@ function cleanReferrer(ref) {
   }
 }
 
-export default function StatsClientView({ url, logs }) {
+export default function StatsClientView({ url, logs, leads = [] }) {
   const [showQr, setShowQr] = useState(false);
   const [currentClicks, setCurrentClicks] = useState(url.clicks);
   const [currentLogs, setCurrentLogs] = useState(logs);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [leadSearch, setLeadSearch] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState(null);
   const { success, error } = useToast();
+
+  const handleCopyEmail = (email) => {
+    navigator.clipboard.writeText(email);
+    setCopiedEmail(email);
+    success("Copied to clipboard", email);
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
 
   const handleResetClicks = async () => {
     setIsResetting(true);
@@ -143,6 +156,19 @@ export default function StatsClientView({ url, logs }) {
       .sort((a, b) => b.count - a.count);
   }, [currentLogs]);
 
+  // Filtered Leads
+  const filteredLeads = useMemo(() => {
+    if (!leadSearch.trim()) return leads;
+    const q = leadSearch.toLowerCase().trim();
+    return leads.filter((l) => l.email.toLowerCase().includes(q));
+  }, [leads, leadSearch]);
+
+  // Conversion rate (Leads / Clicks %)
+  const conversionRate = useMemo(() => {
+    if (!currentClicks || currentClicks === 0) return 0;
+    return Math.min(Math.round((leads.length / currentClicks) * 100), 100);
+  }, [leads.length, currentClicks]);
+
   // Device & Platform breakdown
   const deviceStats = useMemo(() => {
     const devices = {};
@@ -209,6 +235,16 @@ export default function StatsClientView({ url, logs }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {url.requireEmail && (
+              <a
+                href={`/api/urls/${url.id}/leads/export`}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
+                title="Export collected leads to CSV"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Export Leads ({leads.length})</span>
+              </a>
+            )}
             <button
               type="button"
               onClick={() => setIsResetModalOpen(true)}
@@ -253,6 +289,20 @@ export default function StatsClientView({ url, logs }) {
 
         <div className="rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            Verified Leads
+          </p>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
+            {leads.length.toLocaleString()}
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-400">
+            {url.requireEmail
+              ? `${conversionRate}% conversion rate`
+              : "Email gate not enabled"}
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
             Top Referrer
           </p>
           <p className="mt-2 text-2xl font-bold truncate text-zinc-950 dark:text-white">
@@ -262,20 +312,6 @@ export default function StatsClientView({ url, logs }) {
             {referrers[0]
               ? `${referrers[0].count} clicks (${referrers[0].percent}%)`
               : "No traffic data yet"}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-            Top Device
-          </p>
-          <p className="mt-2 text-2xl font-bold text-zinc-950 dark:text-white">
-            {deviceStats.devices[0]?.name || "N/A"}
-          </p>
-          <p className="mt-1 text-[11px] text-zinc-400">
-            {deviceStats.devices[0]
-              ? `${deviceStats.devices[0].percent}% of traffic`
-              : "Awaiting visitors"}
           </p>
         </div>
 
@@ -320,6 +356,25 @@ export default function StatsClientView({ url, logs }) {
 
         <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
+            Email Verification Gate
+          </span>
+          <span className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-950 dark:text-white">
+            {url.requireEmail ? (
+              <>
+                <Mail className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                OTP Gated ({leads.length} Leads)
+              </>
+            ) : (
+              <>
+                <Unlock className="h-3.5 w-3.5 text-zinc-400" />
+                Open Access
+              </>
+            )}
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
             Password Gate
           </span>
           <span className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-950 dark:text-white">
@@ -331,28 +386,8 @@ export default function StatsClientView({ url, logs }) {
             ) : (
               <>
                 <Unlock className="h-3.5 w-3.5 text-zinc-400" />
-                Open Redirect
+                No Password
               </>
-            )}
-          </span>
-        </div>
-
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
-            Expiration Policy
-          </span>
-          <span className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-950 dark:text-white truncate">
-            {url.expiresAt ? (
-              <>
-                <Clock className="h-3.5 w-3.5 text-rose-500" />
-                {new Date(url.expiresAt).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </>
-            ) : (
-              "Never Expires"
             )}
           </span>
         </div>
@@ -373,6 +408,141 @@ export default function StatsClientView({ url, logs }) {
           </span>
         </div>
       </div>
+
+      {/* Verified Leads Section (Lead Capture Table) */}
+      {(url.requireEmail || leads.length > 0) && (
+        <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                  <Mail className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-sm font-semibold text-zinc-950 dark:text-white">
+                  Verified Leads for /{url.slug}
+                </h3>
+                <span className="rounded-lg bg-blue-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                  {leads.length} captured
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Visitors who authenticated their email via 6-digit OTP before accessing this destination link.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {leads.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const emailList = Array.from(new Set(leads.map((l) => l.email))).join(", ");
+                    navigator.clipboard.writeText(emailList);
+                    success("Emails copied!", `${Array.from(new Set(leads.map((l) => l.email))).length} unique emails copied to clipboard.`);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  title="Copy all emails for this link"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>Copy Emails</span>
+                </button>
+              )}
+              <a
+                href={`/api/urls/${url.id}/leads/export`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60 transition-colors"
+                title="Download CSV of leads for this link"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Export CSV</span>
+              </a>
+              <Link
+                href="/dashboard/leads"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white underline underline-offset-4 ml-1"
+              >
+                <span>All Leads →</span>
+              </Link>
+            </div>
+          </div>
+
+          {leads.length > 0 && (
+            <div className="pt-1">
+              <input
+                type="text"
+                placeholder="Filter emails for this link..."
+                value={leadSearch}
+                onChange={(e) => setLeadSearch(e.target.value)}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-zinc-50/60 px-3 py-1.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-100"
+              />
+            </div>
+          )}
+
+          {leads.length === 0 ? (
+            <div className="py-10 text-center border border-dashed border-zinc-200 rounded-2xl dark:border-zinc-800">
+              <Mail className="mx-auto h-8 w-8 text-zinc-300 dark:text-zinc-700 mb-2" />
+              <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                No leads captured yet
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-400">
+                When visitors verify their email on /r/{url.slug}, their verified addresses will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-zinc-100 bg-zinc-50/70 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-3">Verified Email</th>
+                    <th className="px-4 py-3">Verification Timestamp</th>
+                    <th className="px-4 py-3">IP Address</th>
+                    <th className="px-4 py-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                  {filteredLeads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className="transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">
+                            {lead.email}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyEmail(lead.email)}
+                            className="rounded p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                            title="Copy email"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] text-zinc-500">
+                        {new Date(lead.createdAt).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] text-zinc-400">
+                        {lead.ip ? `${lead.ip.slice(0, 15)}...` : "Anonymized"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                          OTP Verified
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 14-Day Timeline Bar Chart */}
       <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 md:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-4">

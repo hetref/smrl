@@ -8,6 +8,7 @@ import {
   BarChart3,
   Globe,
   Lock,
+  Mail,
   Clock,
   Ban,
   Trash2,
@@ -35,6 +36,8 @@ export default function EditUrlPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [removePassword, setRemovePassword] = useState(false);
+  const [enableEmailGate, setEnableEmailGate] = useState(false);
+  const [leadTitle, setLeadTitle] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [maxClicks, setMaxClicks] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,8 @@ export default function EditUrlPage() {
         setNewSlug(data.slug);
         setNewTargetUrl(data.targetUrl);
         setIsActive(typeof data.isActive === "boolean" ? data.isActive : true);
+        setEnableEmailGate(!!data.requireEmail);
+        setLeadTitle(data.leadTitle || "");
         setMaxClicks(data.maxClicks ? String(data.maxClicks) : "");
         if (data.expiresAt) {
           const d = new Date(data.expiresAt);
@@ -140,6 +145,8 @@ export default function EditUrlPage() {
           newSlug,
           newTargetUrl,
           isActive,
+          requireEmail: enableEmailGate,
+          leadTitle: enableEmailGate ? leadTitle.trim() : null,
           password: password.trim() || undefined,
           removePassword,
           expiresAt: expiresAt || null,
@@ -221,7 +228,7 @@ export default function EditUrlPage() {
           Edit Link Settings
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
-          Modify destination, slug, password protection, and automated gates.
+          Modify destination, slug, email verification gate, password protection, and automated limits.
         </p>
       </div>
 
@@ -304,6 +311,52 @@ export default function EditUrlPage() {
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
               <ShieldCheck className="h-4 w-4" />
               <span>Security & Capacity Gates</span>
+            </div>
+
+            {/* Email Verification Gate (Lead Capture) */}
+            <div className="rounded-2xl border border-zinc-200/80 p-4.5 dark:border-zinc-800 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                      Require Verified Email (Lead Capture)
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Visitors must verify email via 6-digit OTP before redirecting
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={enableEmailGate}
+                  onChange={setEnableEmailGate}
+                  ariaLabel="Toggle email verification gate"
+                />
+              </div>
+
+              {enableEmailGate && (
+                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 animate-in fade-in duration-200">
+                  <label
+                    htmlFor="editLeadTitle"
+                    className="block text-[10px] uppercase font-semibold text-zinc-500 dark:text-zinc-400"
+                  >
+                    Custom Gate Title / Prompt (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="editLeadTitle"
+                    placeholder="e.g. Access Exclusive Guide / Download Link"
+                    value={leadTitle}
+                    onChange={(e) => setLeadTitle(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                  />
+                  <p className="text-[10px] text-zinc-400">
+                    All verified emails are stored in your database and viewable in the analytics view.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Password Gate */}

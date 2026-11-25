@@ -12,6 +12,7 @@ import {
   Pause,
   Play,
   Lock,
+  Mail,
   Clock,
   Ban,
   Globe,
@@ -29,7 +30,7 @@ import { useToast } from "@/app/components/ToastContext";
 export default function UrlsList({ initialUrls }) {
   const [urls, setUrls] = useState(initialUrls);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all"); // "all", "active", "paused", "protected"
+  const [filterStatus, setFilterStatus] = useState("all"); // "all", "active", "paused", "protected", "email"
   const [sortBy, setSortBy] = useState("newest"); // "newest", "clicks", "oldest"
   const [activeQr, setActiveQr] = useState(null); // { slug, targetUrl }
   const [togglingId, setTogglingId] = useState(null);
@@ -126,6 +127,8 @@ export default function UrlsList({ initialUrls }) {
       result = result.filter((u) => !u.isActive);
     } else if (filterStatus === "protected") {
       result = result.filter((u) => u.isPasswordProtected);
+    } else if (filterStatus === "email") {
+      result = result.filter((u) => u.requireEmail);
     }
 
     // Search query
@@ -134,7 +137,8 @@ export default function UrlsList({ initialUrls }) {
       result = result.filter(
         (u) =>
           u.slug.toLowerCase().includes(q) ||
-          u.targetUrl.toLowerCase().includes(q)
+          u.targetUrl.toLowerCase().includes(q) ||
+          (u.leadTitle && u.leadTitle.toLowerCase().includes(q))
       );
     }
 
@@ -168,7 +172,7 @@ export default function UrlsList({ initialUrls }) {
             </div>
             <input
               type="text"
-              placeholder="Search by slug or destination URL..."
+              placeholder="Search by slug, title or destination URL..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-2xl border border-zinc-200/90 bg-white pl-10 pr-9 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 shadow-sm transition-all focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-white dark:focus:ring-white"
@@ -255,6 +259,17 @@ export default function UrlsList({ initialUrls }) {
             </button>
             <button
               type="button"
+              onClick={() => setFilterStatus("email")}
+              className={`rounded-xl px-3 py-1 text-xs font-medium transition-all ${
+                filterStatus === "email"
+                  ? "bg-blue-600 text-white dark:bg-blue-500"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              }`}
+            >
+              Email Gated ({urls.filter((u) => u.requireEmail).length})
+            </button>
+            <button
+              type="button"
               onClick={() => setFilterStatus("paused")}
               className={`rounded-xl px-3 py-1 text-xs font-medium transition-all ${
                 filterStatus === "paused"
@@ -315,7 +330,7 @@ export default function UrlsList({ initialUrls }) {
                 No links created yet
               </p>
               <p className="mt-1 text-xs text-zinc-500 max-w-sm mx-auto">
-                Create your first trackable short link to begin collecting analytics and managing security rules.
+                Create your first trackable short link to begin collecting analytics, capturing leads, and managing security rules.
               </p>
               <Link
                 href="/dashboard/new"
@@ -335,7 +350,7 @@ export default function UrlsList({ initialUrls }) {
               <table className="w-full min-w-[960px] text-left">
                 <thead className="border-b border-zinc-100 bg-zinc-50/70 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-400">
                   <tr>
-                    <th className="px-6 py-4 min-w-[260px]">Short Link</th>
+                    <th className="px-6 py-4 min-w-[280px]">Short Link</th>
                     <th className="px-6 py-4 min-w-[260px]">Destination</th>
                     <th className="px-6 py-4 text-center min-w-[90px]">Clicks</th>
                     <th className="px-6 py-4 min-w-[120px]">Created</th>
@@ -353,7 +368,7 @@ export default function UrlsList({ initialUrls }) {
                       className="group transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
                     >
                       {/* Short Link Column */}
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[260px]">
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[280px]">
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-zinc-950 dark:text-white">
@@ -382,6 +397,13 @@ export default function UrlsList({ initialUrls }) {
                               <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                                 <Pause className="h-2.5 w-2.5" />
                                 Paused
+                              </span>
+                            )}
+
+                            {url.requireEmail && (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                                <Mail className="h-2.5 w-2.5" />
+                                Email Gated {url.totalLeads > 0 && `(${url.totalLeads})`}
                               </span>
                             )}
 
@@ -445,7 +467,7 @@ export default function UrlsList({ initialUrls }) {
                           <Link
                             href={`/dashboard/urls/${url.id}/stats`}
                             className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
-                            title="Analytics & Logs"
+                            title="Analytics & Leads"
                           >
                             <BarChart3 className="h-4 w-4" />
                           </Link>
@@ -559,6 +581,12 @@ export default function UrlsList({ initialUrls }) {
                       <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                         <Pause className="h-2.5 w-2.5" />
                         Paused
+                      </span>
+                    )}
+                    {url.requireEmail && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                        <Mail className="h-2.5 w-2.5" />
+                        Email Gated {url.totalLeads > 0 && `(${url.totalLeads})`}
                       </span>
                     )}
                     {url.isPasswordProtected && (

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Link2,
   Lock,
+  Mail,
   Clock,
   Ban,
   Tag,
@@ -30,6 +31,8 @@ export default function NewUrlPage() {
   const [enablePassword, setEnablePassword] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [enableEmailGate, setEnableEmailGate] = useState(false);
+  const [leadTitle, setLeadTitle] = useState("");
   const [enableExpires, setEnableExpires] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
   const [enableMaxClicks, setEnableMaxClicks] = useState(false);
@@ -80,6 +83,8 @@ export default function NewUrlPage() {
           targetUrl,
           customSlug: customSlug.trim() || undefined,
           password: enablePassword && password.trim() ? password.trim() : undefined,
+          requireEmail: enableEmailGate,
+          leadTitle: enableEmailGate && leadTitle.trim() ? leadTitle.trim() : undefined,
           expiresAt: enableExpires && expiresAt ? expiresAt : undefined,
           maxClicks: enableMaxClicks && maxClicks ? maxClicks : undefined,
           utmSource: showUtmBuilder && utmSource.trim() ? utmSource.trim() : undefined,
@@ -106,12 +111,14 @@ export default function NewUrlPage() {
       setTargetUrl("");
       setCustomSlug("");
       setPassword("");
+      setLeadTitle("");
       setExpiresAt("");
       setMaxClicks("");
       setUtmSource("");
       setUtmMedium("");
       setUtmCampaign("");
       setEnablePassword(false);
+      setEnableEmailGate(false);
       setEnableExpires(false);
       setEnableMaxClicks(false);
       setShowUtmBuilder(false);
@@ -216,6 +223,52 @@ export default function NewUrlPage() {
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
               <ShieldCheck className="h-4 w-4" />
               <span>Security & Access Rules</span>
+            </div>
+
+            {/* Email Verification Gate (Lead Capture) */}
+            <div className="rounded-2xl border border-zinc-200/80 p-4.5 dark:border-zinc-800 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-white">
+                      Require Verified Email (Lead Capture)
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Require visitors to verify email via 6-digit OTP before redirecting
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={enableEmailGate}
+                  onChange={setEnableEmailGate}
+                  ariaLabel="Toggle email verification gate"
+                />
+              </div>
+
+              {enableEmailGate && (
+                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 animate-in fade-in duration-200">
+                  <label
+                    htmlFor="leadTitle"
+                    className="block text-[10px] uppercase font-semibold text-zinc-500 dark:text-zinc-400"
+                  >
+                    Custom Gate Title / Prompt (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="leadTitle"
+                    placeholder="e.g. Access Exclusive Guide / Download Link"
+                    value={leadTitle}
+                    onChange={(e) => setLeadTitle(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                  />
+                  <p className="text-[10px] text-zinc-400">
+                    All verified emails are recorded in your dashboard with full visitor metadata and 1-click CSV export.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Password Protection */}
@@ -564,7 +617,7 @@ export default function NewUrlPage() {
               )}
               <div className="flex-1 space-y-3 text-center sm:text-left">
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  Your short link is live and will respect your custom active, password, expiration, and UTM configuration.
+                  Your short link is live and will respect your custom active, email verification, password, expiration, and UTM configuration.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                   <Link

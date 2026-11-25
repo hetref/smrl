@@ -13,19 +13,23 @@ datasource db {
 }
 
 model ShortUrl {
-  id           String     @id @default(uuid())
-  slug         String     @unique
+  id           String         @id @default(uuid())
+  slug         String         @unique
   targetUrl    String
   userId       String?
-  clicks       Int        @default(0)
+  clicks       Int            @default(0)
   maxClicks    Int?
   expiresAt    DateTime?
   passwordHash String?
   passwordSalt String?
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @default(now()) @updatedAt
+  requireEmail Boolean        @default(false)
+  leadTitle    String?
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
   ClickLog     ClickLog[]
+  VerifiedLead VerifiedLead[]
+  EmailOtp     EmailOtp[]
 
   @@index([createdAt])
   @@index([userId])
@@ -43,4 +47,36 @@ model ClickLog {
 
   @@index([shortUrlId])
   @@index([createdAt])
+}
+
+model VerifiedLead {
+  id         String   @id @default(uuid())
+  shortUrlId String
+  email      String
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  ShortUrl ShortUrl @relation(fields: [shortUrlId], references: [id], onDelete: Cascade)
+
+  @@index([shortUrlId])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model EmailOtp {
+  id         String   @id @default(uuid())
+  shortUrlId String
+  email      String
+  otpHash    String
+  otpSalt    String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  ShortUrl ShortUrl @relation(fields: [shortUrlId], references: [id], onDelete: Cascade)
+
+  @@index([shortUrlId, email])
+  @@index([expiresAt])
 }

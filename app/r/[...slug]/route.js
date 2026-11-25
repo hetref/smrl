@@ -1,9 +1,9 @@
 import { after } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyLinkAccessToken } from "@/lib/security";
+import { verifyLinkAccessToken, verifyLeadAccessToken } from "@/lib/security";
 
 // Keep dynamic for real-time redirects
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request, { params }) {
   try {
@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
 
     const requestUrl = new URL(request.url);
 
-    // Query record with security attributes
+    // Query record with all security and gate attributes
     const record = await prisma.shortUrl.findUnique({
       where: { slug },
       select: {
@@ -28,6 +28,8 @@ export async function GET(request, { params }) {
         maxClicks: true,
         expiresAt: true,
         passwordHash: true,
+        requireEmail: true,
+        leadTitle: true,
         isActive: true,
       },
     });
@@ -51,10 +53,22 @@ export async function GET(request, { params }) {
       return Response.redirect(new URL(`/gate/${slug}?status=limit_reached`, request.url), 307);
     }
 
-    // Security Gate 4: Password Protection Check
+    const cookieHeader = request.headers.get("cookie") || "";
+
+    // Security Gate 4: Email Verification Gate (Lead Capture)
+    if (record.requireEmail) {
+      const leadCookieMatch = cookieHeader.match(new RegExp(`(?:^|; )smrl_lead_${record.id}=([^;]*)`));
+      const leadToken = leadCookieMatch ? decodeURIComponent(leadCookieMatch[1]) : null;
+      const hasVerifiedEmail = verifyLeadAccessToken(leadToken, record.id);
+
+      if (!hasVerifiedEmail) {
+        // Redirect to email verification gate. Target URL remains confidential.
+        return Response.redirect(new URL(`/gate/${slug}?status=email`, request.url), 307);
+      }
+    }
+
+    // Security Gate 5: Password Protection Check
     if (record.passwordHash) {
-      // Check HTTP-only auth cookie
-      const cookieHeader = request.headers.get("cookie") || "";
       const match = cookieHeader.match(new RegExp(`(?:^|; )smrl_token_${record.id}=([^;]*)`));
       const token = match ? decodeURIComponent(match[1]) : null;
 

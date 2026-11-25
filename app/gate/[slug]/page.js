@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Lock, Pause, Clock, Ban, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Lock, Pause, Clock, Ban, ShieldCheck, ArrowLeft, Mail } from "lucide-react";
 import prisma from "@/lib/prisma";
 import PasswordGateForm from "./PasswordGateForm";
+import EmailGateForm from "./EmailGateForm";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,8 @@ export default async function GatePage({ params, searchParams }) {
     select: {
       slug: true,
       passwordHash: true,
+      requireEmail: true,
+      leadTitle: true,
       isActive: true,
       expiresAt: true,
       maxClicks: true,
@@ -39,13 +42,47 @@ export default async function GatePage({ params, searchParams }) {
   const isLimitReached =
     (record.maxClicks !== null && record.clicks >= record.maxClicks) ||
     status === "limit_reached";
+
+  const isEmailGate =
+    !isPaused &&
+    !isExpired &&
+    !isLimitReached &&
+    (status === "email" || (record.requireEmail && status !== "password"));
+
   const isPasswordProtected =
-    !!record.passwordHash && !isPaused && !isExpired && !isLimitReached;
+    !isPaused &&
+    !isExpired &&
+    !isLimitReached &&
+    !isEmailGate &&
+    (!!record.passwordHash || status === "password");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black px-6 py-12 selection:bg-zinc-200 dark:selection:bg-zinc-800">
       <div className="w-full max-w-md rounded-3xl border border-zinc-200/90 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900 shadow-xl transition-all">
-        {/* State 1: Password Gate */}
+        {/* State 1: Email Verification Gate */}
+        {isEmailGate && (
+          <div className="space-y-6">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40">
+              <Mail className="h-6 w-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h1 className="text-xl font-bold tracking-tight text-zinc-950 dark:text-white">
+                {record.leadTitle || "Email Verification Required"}
+              </h1>
+              <p className="text-xs text-zinc-500 font-mono">
+                /r/{record.slug}
+              </p>
+              <p className="pt-1 text-xs text-zinc-500 leading-relaxed">
+                Please verify your email address to unlock this link. A 6-digit one-time passcode will be delivered to your inbox.
+              </p>
+            </div>
+
+            <EmailGateForm slug={record.slug} leadTitle={record.leadTitle} />
+          </div>
+        )}
+
+        {/* State 2: Password Gate */}
         {isPasswordProtected && (
           <div className="space-y-6">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-200/60 dark:border-purple-900/40">
@@ -68,7 +105,7 @@ export default async function GatePage({ params, searchParams }) {
           </div>
         )}
 
-        {/* State 2: Paused */}
+        {/* State 3: Paused */}
         {isPaused && (
           <div className="space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40">
@@ -99,7 +136,7 @@ export default async function GatePage({ params, searchParams }) {
           </div>
         )}
 
-        {/* State 3: Expired */}
+        {/* State 4: Expired */}
         {isExpired && (
           <div className="space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40">
@@ -130,7 +167,7 @@ export default async function GatePage({ params, searchParams }) {
           </div>
         )}
 
-        {/* State 4: Click Limit Reached */}
+        {/* State 5: Click Limit Reached */}
         {isLimitReached && (
           <div className="space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40">

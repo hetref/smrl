@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Shield,
   Layers,
+  Users,
 } from "lucide-react";
 import { verifyAllowedUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -44,6 +45,13 @@ export default async function DashboardPage() {
   });
   const totalClicks = clicksAggregate._sum.clicks || 0;
 
+  // Captured leads total
+  const totalLeads = await prisma.verifiedLead.count({
+    where: {
+      ShortUrl: userFilter,
+    },
+  });
+
   // Top performing link
   const topUrl = await prisma.shortUrl.findFirst({
     where: userFilter,
@@ -72,10 +80,17 @@ export default async function DashboardPage() {
             System Overview
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
-            Real-time redirect metrics and short URL performance.
+            Real-time redirect metrics, short URL performance, and lead capture.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/dashboard/leads"
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>Captured Leads ({totalLeads})</span>
+          </Link>
           <Link
             href="/dashboard/urls"
             className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -131,6 +146,28 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {/* Captured Leads */}
+        <Link
+          href="/dashboard/leads"
+          className="group rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm transition-all hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-800"
+        >
+          <div className="flex items-center justify-between text-zinc-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              Captured Leads
+            </span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+              <Users className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {totalLeads.toLocaleString()}
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-400 flex items-center gap-1">
+            <span>Verified email submissions</span>
+            <span className="text-blue-500">→</span>
+          </p>
+        </Link>
+
         {/* Top Performer */}
         <div className="rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center justify-between text-zinc-500">
@@ -146,24 +183,6 @@ export default async function DashboardPage() {
           </p>
           <p className="mt-1 text-[11px] text-zinc-400">
             {topUrl ? `${topUrl.clicks.toLocaleString()} clicks recorded` : "Create your first link"}
-          </p>
-        </div>
-
-        {/* Avg Clicks */}
-        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between text-zinc-500">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">
-              Avg Clicks / Link
-            </span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950 dark:text-white">
-            {avgClicks}
-          </p>
-          <p className="mt-1 text-[11px] text-zinc-400">
-            Average engagement density
           </p>
         </div>
       </div>

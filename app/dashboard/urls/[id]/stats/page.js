@@ -27,6 +27,10 @@ export default async function UrlStatsPage({ params }) {
         orderBy: { createdAt: "desc" },
         take: 300,
       },
+      VerifiedLead: {
+        orderBy: { createdAt: "desc" },
+        take: 300,
+      },
     },
   });
 
@@ -44,6 +48,8 @@ export default async function UrlStatsPage({ params }) {
     targetUrl: url.targetUrl,
     clicks: url.clicks,
     isPasswordProtected: !!url.passwordHash,
+    requireEmail: !!url.requireEmail,
+    leadTitle: url.leadTitle || "",
     isActive: typeof url.isActive === "boolean" ? url.isActive : true,
     expiresAt: url.expiresAt ? url.expiresAt.toISOString() : null,
     maxClicks: url.maxClicks,
@@ -55,6 +61,14 @@ export default async function UrlStatsPage({ params }) {
     referrer: log.referrer,
     userAgent: log.userAgent,
     createdAt: log.createdAt.toISOString(),
+  }));
+
+  const serializedLeads = url.VerifiedLead.map((lead) => ({
+    id: lead.id,
+    email: lead.email,
+    ip: lead.ip,
+    userAgent: lead.userAgent,
+    createdAt: lead.createdAt.toISOString(),
   }));
 
   return (
@@ -92,7 +106,7 @@ export default async function UrlStatsPage({ params }) {
       </div>
 
       {/* Main Stats Presentation Component */}
-      <StatsClientView url={serializedUrl} logs={serializedLogs} />
+      <StatsClientView url={serializedUrl} logs={serializedLogs} leads={serializedLeads} />
     </div>
   );
 }
