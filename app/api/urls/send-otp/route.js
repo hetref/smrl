@@ -146,8 +146,20 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Error in send-otp:", error);
+    let errorMessage = "Failed to send verification code. Please try again.";
+
+    if (
+      error?.code === "EAUTH" ||
+      error?.responseCode === 535 ||
+      error?.message?.includes("535") ||
+      error?.message?.includes("BadCredentials")
+    ) {
+      errorMessage =
+        "SMTP Authentication Error (535): Username and password not accepted by Google. Please ensure you are using a 16-character Google App Password (not your personal account password) with 2-Step Verification enabled.";
+    }
+
     return NextResponse.json(
-      { error: "Failed to send verification code. Please try again." },
+      { error: errorMessage },
       { status: 500 }
     );
   }
